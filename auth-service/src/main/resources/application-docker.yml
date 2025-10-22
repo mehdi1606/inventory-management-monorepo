@@ -4,7 +4,7 @@ spring:
       on-profile: docker
 
   datasource:
-    url: jdbc:postgresql://postgres-user:5432/user_db    # ✅ CHANGED from postgres-auth
+    url: jdbc:postgresql://postgres-user:5432/user_db
     username: user_user
     password: user_pass
     driver-class-name: org.postgresql.Driver
@@ -22,7 +22,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   kafka:
-    bootstrap-servers: kafka:29092    # ✅ CHANGED from kafka:9092
+    bootstrap-servers: kafka:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -31,7 +31,7 @@ spring:
 
   data:
     redis:
-      host: redis                      # ✅ CORRECT (uses service name from main compose)
+      host: redis
       port: 6379
       timeout: 2000ms
 
@@ -56,7 +56,7 @@ jwt:
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
   mfa-temp-token-expiration: 300000
-  issuer: stock-management-auth-service
+  issuer: http://auth-service:8081 
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:8081}

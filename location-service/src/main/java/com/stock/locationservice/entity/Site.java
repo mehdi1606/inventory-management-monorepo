@@ -3,7 +3,9 @@ package com.stock.locationservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -31,8 +33,9 @@ public class Site {
 
     @Column(length = 500)
     private String address;
+    
 
-    @Column(columnDefinition = "jsonb")
+    @Column
     private String settings;
 
     @Column(name = "is_active")

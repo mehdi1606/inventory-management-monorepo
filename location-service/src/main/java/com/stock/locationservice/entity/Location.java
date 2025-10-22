@@ -2,7 +2,9 @@ package com.stock.locationservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -45,13 +47,15 @@ public class Location {
     @Column(nullable = false, length = 50)
     private LocationType type;
 
-    @Column(columnDefinition = "jsonb")
+    @Column
     private String capacity;
 
-    @Column(columnDefinition = "jsonb")
-    private String restrictions;
 
-    @Column(columnDefinition = "jsonb")
+    @Column
+     private String restrictions;
+
+
+    @Column
     private String coordinates;
 
     @Column(name = "is_active")
