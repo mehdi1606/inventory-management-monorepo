@@ -14,7 +14,7 @@
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:889)
 	... 20 more
 
-2025-10-19 15:22:29 - Request execution failed with message: I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8081": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
+2025-10-19 15:22:29 - Request execution failed with message: I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8083": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
 2025-10-19 15:22:29 - There was a problem with the instance info replicator
 com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
@@ -30,7 +30,7 @@ com.netflix.discovery.shared.transport.TransportException: Cannot execute reques
 	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
 	at java.base/java.lang.Thread.run(Unknown Source)
-2025-10-19 15:22:29 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8081 - was unable to send heartbeat!
+2025-10-19 15:22:29 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8083 - was unable to send heartbeat!
 com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.sendHeartBeat(EurekaHttpClientDecorator.java:89)
@@ -119,7 +119,7 @@ Caused by: org.apache.hc.client5.http.HttpHostConnectException: Connect to http:
 	... 23 more
 
 2025-10-19 15:22:29 - Request execution failed with message: I/O error on GET request for "http://localhost:8761/eureka/apps/": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
-2025-10-19 15:22:29 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8081 - was unable to refresh its cache! This periodic background refresh will be retried in 30 seconds. status = Cannot execute request on any known server stacktrace = com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
+2025-10-19 15:22:29 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8083 - was unable to refresh its cache! This periodic background refresh will be retried in 30 seconds. status = Cannot execute request on any known server stacktrace = com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.getApplications(EurekaHttpClientDecorator.java:134)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator$6.execute(EurekaHttpClientDecorator.java:137)
@@ -183,8 +183,8 @@ Caused by: java.net.ConnectException: Connection refused
 	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
 	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
 	at java.base/java.lang.Thread.run(Unknown Source)
-2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8081: registering service...
-2025-10-19 15:22:59 - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/}, exception=I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8081": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8081": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
+2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8083: registering service...
+2025-10-19 15:22:59 - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/}, exception=I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8083": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8083": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
 	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:915)
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:895)
 	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:790)
@@ -248,7 +248,7 @@ Caused by: org.apache.hc.client5.http.HttpHostConnectException: Connect to http:
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:889)
 	... 20 more
 
-2025-10-19 15:22:59 - Request execution failed with message: I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8081": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
+2025-10-19 15:22:59 - Request execution failed with message: I/O error on PUT request for "http://localhost:8761/eureka/apps/AUTH-SERVICE/c088d6b91ef4:auth-service:8083": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
 2025-10-19 15:22:59 - Request execution error. endpoint=DefaultEndpoint{ serviceUrl='http://localhost:8761/eureka/}, exception=I/O error on POST request for "http://localhost:8761/eureka/apps/AUTH-SERVICE": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused stacktrace=org.springframework.web.client.ResourceAccessException: I/O error on POST request for "http://localhost:8761/eureka/apps/AUTH-SERVICE": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
 	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:915)
 	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:895)
@@ -315,7 +315,7 @@ Caused by: org.apache.hc.client5.http.HttpHostConnectException: Connect to http:
 	... 21 more
 
 2025-10-19 15:22:59 - Request execution failed with message: I/O error on POST request for "http://localhost:8761/eureka/apps/AUTH-SERVICE": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
-2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8081 - was unable to send heartbeat!
+2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8083 - was unable to send heartbeat!
 com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.sendHeartBeat(EurekaHttpClientDecorator.java:89)
@@ -329,7 +329,7 @@ com.netflix.discovery.shared.transport.TransportException: Cannot execute reques
 	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
 	at java.base/java.lang.Thread.run(Unknown Source)
-2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8081 - registration failed Cannot execute request on any known server
+2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8083 - registration failed Cannot execute request on any known server
 com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.register(EurekaHttpClientDecorator.java:56)
@@ -434,7 +434,7 @@ Caused by: org.apache.hc.client5.http.HttpHostConnectException: Connect to http:
 	... 23 more
 
 2025-10-19 15:22:59 - Request execution failed with message: I/O error on GET request for "http://localhost:8761/eureka/apps/": Connect to http://localhost:8761 [localhost/127.0.0.1] failed: Connection refused
-2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8081 - was unable to refresh its cache! This periodic background refresh will be retried in 30 seconds. status = Cannot execute request on any known server stacktrace = com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
+2025-10-19 15:22:59 - DiscoveryClient_AUTH-SERVICE/c088d6b91ef4:auth-service:8083 - was unable to refresh its cache! This periodic background refresh will be retried in 30 seconds. status = Cannot execute request on any known server stacktrace = com.netflix.discovery.shared.transport.TransportException: Cannot execute request on any known server
 	at com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient.execute(RetryableEurekaHttpClient.java:112)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.getApplications(EurekaHttpClientDecorator.java:134)
 	at com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator$6.execute(EurekaHttpClientDecorator.java:137)

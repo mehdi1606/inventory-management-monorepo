@@ -17,7 +17,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    @Value("${app.base-url:http://localhost:8081}")
+    @Value("${app.base-url:http://localhost:8083}")
     private String baseUrl;
 
     public void sendVerificationEmail(String email, String token) {

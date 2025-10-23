@@ -20,7 +20,7 @@ public class OpenApiConfig {
         devServer.setDescription("Development Server");
 
         Server dockerServer = new Server();
-        dockerServer.setUrl("http://api-gateway:8081/location-service");
+        dockerServer.setUrl("http://api-gateway:8083/location-service");
         dockerServer.setDescription("Docker Server");
 
         Contact contact = new Contact();

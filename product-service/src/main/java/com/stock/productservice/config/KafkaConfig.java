@@ -1,3 +1,4 @@
+// Updated KafkaConfig.java
 package com.stock.productservice.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
@@ -8,44 +9,44 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaConfig {
 
-    // Product Topics
-    public static final String PRODUCT_CREATED_TOPIC = "product.created";
-    public static final String PRODUCT_UPDATED_TOPIC = "product.updated";
-    public static final String PRODUCT_DELETED_TOPIC = "product.deleted";
+    // Item Topics (changed from Product)
+    public static final String ITEM_CREATED_TOPIC = "item.created";
+    public static final String ITEM_UPDATED_TOPIC = "item.updated";
+    public static final String ITEM_DELETED_TOPIC = "item.deleted";
 
     // Category Topics
     public static final String CATEGORY_CREATED_TOPIC = "category.created";
     public static final String CATEGORY_UPDATED_TOPIC = "category.updated";
     public static final String CATEGORY_DELETED_TOPIC = "category.deleted";
 
-    // Supplier Topics
-    public static final String SUPPLIER_CREATED_TOPIC = "supplier.created";
-    public static final String SUPPLIER_UPDATED_TOPIC = "supplier.updated";
-    public static final String SUPPLIER_DELETED_TOPIC = "supplier.deleted";
+    // ItemVariant Topics (changed from Supplier)
+    public static final String ITEM_VARIANT_CREATED_TOPIC = "itemvariant.created";
+    public static final String ITEM_VARIANT_UPDATED_TOPIC = "itemvariant.updated";
+    public static final String ITEM_VARIANT_DELETED_TOPIC = "itemvariant.deleted";
 
-    // Product Topics
+    // Item Topics
     @Bean
-    public NewTopic productCreatedTopic() {
+    public NewTopic itemCreatedTopic() {
         return TopicBuilder
-                .name(PRODUCT_CREATED_TOPIC)
+                .name(ITEM_CREATED_TOPIC)
                 .partitions(3)
                 .replicas(1)
                 .build();
     }
 
     @Bean
-    public NewTopic productUpdatedTopic() {
+    public NewTopic itemUpdatedTopic() {
         return TopicBuilder
-                .name(PRODUCT_UPDATED_TOPIC)
+                .name(ITEM_UPDATED_TOPIC)
                 .partitions(3)
                 .replicas(1)
                 .build();
     }
 
     @Bean
-    public NewTopic productDeletedTopic() {
+    public NewTopic itemDeletedTopic() {
         return TopicBuilder
-                .name(PRODUCT_DELETED_TOPIC)
+                .name(ITEM_DELETED_TOPIC)
                 .partitions(3)
                 .replicas(1)
                 .build();
@@ -79,29 +80,29 @@ public class KafkaConfig {
                 .build();
     }
 
-    // Supplier Topics
+    // ItemVariant Topics
     @Bean
-    public NewTopic supplierCreatedTopic() {
+    public NewTopic itemVariantCreatedTopic() {
         return TopicBuilder
-                .name(SUPPLIER_CREATED_TOPIC)
+                .name(ITEM_VARIANT_CREATED_TOPIC)
                 .partitions(3)
                 .replicas(1)
                 .build();
     }
 
     @Bean
-    public NewTopic supplierUpdatedTopic() {
+    public NewTopic itemVariantUpdatedTopic() {
         return TopicBuilder
-                .name(SUPPLIER_UPDATED_TOPIC)
+                .name(ITEM_VARIANT_UPDATED_TOPIC)
                 .partitions(3)
                 .replicas(1)
                 .build();
     }
 
     @Bean
-    public NewTopic supplierDeletedTopic() {
+    public NewTopic itemVariantDeletedTopic() {
         return TopicBuilder
-                .name(SUPPLIER_DELETED_TOPIC)
+                .name(ITEM_VARIANT_DELETED_TOPIC)
                 .partitions(3)
                 .replicas(1)
                 .build();

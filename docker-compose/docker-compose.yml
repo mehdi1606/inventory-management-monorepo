@@ -381,7 +381,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "8083:8083"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-user:5432/user_db
@@ -401,7 +401,7 @@ services:
       - stock-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8083/api/health || exit 1"]
       interval: 30s
       timeout: 3s
       retries: 3
