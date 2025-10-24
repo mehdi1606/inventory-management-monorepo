@@ -54,7 +54,7 @@ public class ItemVariantServiceImpl implements ItemVariantService {
         ItemVariant savedItemVariant = itemVariantRepository.save(itemVariant);
         log.info("ItemVariant created successfully with ID: {}", savedItemVariant.getId());
 
-        ItemVariantDTO dto = mapToDTO(savedItemVariant, parentItem.getName());
+        ItemVariantDTO dto = mapToDTO(savedItemVariant, parentItem.getName(), parentItem.getSku());
 
         // Publish event
         ItemVariantEvent event = ItemVariantEvent.builder()
@@ -79,9 +79,9 @@ public class ItemVariantServiceImpl implements ItemVariantService {
         ItemVariant itemVariant = itemVariantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ItemVariant not found with ID: " + id));
 
-        String parentItemName = getParentItemName(itemVariant.getParentItemId());
+        Item parentItem = getParentItem(itemVariant.getParentItemId());
 
-        return mapToDTO(itemVariant, parentItemName);
+        return mapToDTO(itemVariant, parentItem.getName(), parentItem.getSku());
     }
 
     @Override
@@ -89,12 +89,12 @@ public class ItemVariantServiceImpl implements ItemVariantService {
     public ItemVariantDTO getItemVariantByCode(String sku) {
         log.info("Fetching item variant with SKU: {}", sku);
 
-        ItemVariant itemVariant = itemVariantRepository.findByCode(sku)
+        ItemVariant itemVariant = itemVariantRepository.findBySku(sku)
                 .orElseThrow(() -> new ResourceNotFoundException("ItemVariant not found with SKU: " + sku));
 
-        String parentItemName = getParentItemName(itemVariant.getParentItemId());
+        Item parentItem = getParentItem(itemVariant.getParentItemId());
 
-        return mapToDTO(itemVariant, parentItemName);
+        return mapToDTO(itemVariant, parentItem.getName(), parentItem.getSku());
     }
 
     @Override
@@ -104,8 +104,8 @@ public class ItemVariantServiceImpl implements ItemVariantService {
 
         return itemVariantRepository.findAll().stream()
                 .map(variant -> {
-                    String parentItemName = getParentItemName(variant.getParentItemId());
-                    return mapToDTO(variant, parentItemName);
+                    Item parentItem = getParentItem(variant.getParentItemId());
+                    return mapToDTO(variant, parentItem.getName(), parentItem.getSku());
                 })
                 .collect(Collectors.toList());
     }
@@ -117,8 +117,8 @@ public class ItemVariantServiceImpl implements ItemVariantService {
 
         return itemVariantRepository.findActiveItemVariants().stream()
                 .map(variant -> {
-                    String parentItemName = getParentItemName(variant.getParentItemId());
-                    return mapToDTO(variant, parentItemName);
+                    Item parentItem = getParentItem(variant.getParentItemId());
+                    return mapToDTO(variant, parentItem.getName(), parentItem.getSku());
                 })
                 .collect(Collectors.toList());
     }
@@ -130,8 +130,8 @@ public class ItemVariantServiceImpl implements ItemVariantService {
 
         return itemVariantRepository.searchItemVariants(keyword).stream()
                 .map(variant -> {
-                    String parentItemName = getParentItemName(variant.getParentItemId());
-                    return mapToDTO(variant, parentItemName);
+                    Item parentItem = getParentItem(variant.getParentItemId());
+                    return mapToDTO(variant, parentItem.getName(), parentItem.getSku());
                 })
                 .collect(Collectors.toList());
     }
@@ -155,14 +155,14 @@ public class ItemVariantServiceImpl implements ItemVariantService {
         ItemVariant updatedItemVariant = itemVariantRepository.save(itemVariant);
         log.info("ItemVariant updated successfully with ID: {}", updatedItemVariant.getId());
 
-        String parentItemName = getParentItemName(updatedItemVariant.getParentItemId());
-        ItemVariantDTO dto = mapToDTO(updatedItemVariant, parentItemName);
+        Item parentItem = getParentItem(updatedItemVariant.getParentItemId());
+        ItemVariantDTO dto = mapToDTO(updatedItemVariant, parentItem.getName(), parentItem.getSku());
 
         // Publish event
         ItemVariantEvent event = ItemVariantEvent.builder()
                 .id(updatedItemVariant.getId())
                 .code(updatedItemVariant.getSku())
-                .name(parentItemName)
+                .name(parentItem.getName())
                 .email(null)
                 .isActive(updatedItemVariant.getIsActive())
                 .timestamp(LocalDateTime.now())
@@ -183,13 +183,13 @@ public class ItemVariantServiceImpl implements ItemVariantService {
         itemVariantRepository.delete(itemVariant);
         log.info("ItemVariant deleted successfully with ID: {}", id);
 
-        String parentItemName = getParentItemName(itemVariant.getParentItemId());
+        Item parentItem = getParentItem(itemVariant.getParentItemId());
 
         // Publish event
         ItemVariantEvent event = ItemVariantEvent.builder()
                 .id(itemVariant.getId())
                 .code(itemVariant.getSku())
-                .name(parentItemName)
+                .name(parentItem.getName())
                 .email(null)
                 .isActive(false)
                 .timestamp(LocalDateTime.now())
@@ -223,17 +223,17 @@ public class ItemVariantServiceImpl implements ItemVariantService {
     }
 
     // Helper methods
-    private String getParentItemName(String parentItemId) {
+    private Item getParentItem(String parentItemId) {
         return itemRepository.findById(parentItemId)
-                .map(Item::getName)
-                .orElse("Unknown");
+                .orElseThrow(() -> new ResourceNotFoundException("Parent item not found with ID: " + parentItemId));
     }
 
-    private ItemVariantDTO mapToDTO(ItemVariant itemVariant, String parentItemName) {
+    private ItemVariantDTO mapToDTO(ItemVariant itemVariant, String parentItemName, String parentItemSku) {
         return ItemVariantDTO.builder()
                 .id(itemVariant.getId())
                 .parentItemId(itemVariant.getParentItemId())
                 .parentItemName(parentItemName)
+                .parentItemSku(parentItemSku)
                 .sku(itemVariant.getSku())
                 .variantAttributes(itemVariant.getVariantAttributes())
                 .isActive(itemVariant.getIsActive())

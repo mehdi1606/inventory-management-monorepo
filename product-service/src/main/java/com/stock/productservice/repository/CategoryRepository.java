@@ -1,4 +1,3 @@
-
 package com.stock.productservice.repository;
 
 import com.stock.productservice.entity.Category;
@@ -14,7 +13,7 @@ public interface CategoryRepository extends JpaRepository<Category, String> {
 
     Optional<Category> findByName(String name);
 
-    List<Category> findByParentId(String parentId);
+    List<Category> findByParentCategoryId(String parentCategoryId);
 
     List<Category> findByIsActive(Boolean isActive);
 

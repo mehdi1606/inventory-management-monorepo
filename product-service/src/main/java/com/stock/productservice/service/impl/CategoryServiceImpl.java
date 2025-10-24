@@ -108,7 +108,7 @@ public class CategoryServiceImpl implements CategoryService {
     public List<CategoryDTO> getCategoriesByParentId(String parentId) {
         log.info("Fetching categories for parent ID: {}", parentId);
 
-        return categoryRepository.findByParentId(parentId).stream()
+        return categoryRepository.findByParentCategoryId(parentId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }

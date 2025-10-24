@@ -1,4 +1,3 @@
-
 package com.stock.productservice.repository;
 
 import com.stock.productservice.entity.Item;
@@ -16,8 +15,6 @@ public interface ItemRepository extends JpaRepository<Item, String> {
     Optional<Item> findBySku(String sku);
 
     List<Item> findByCategoryId(String categoryId);
-
-    List<Item> findBySupplierId(String supplierId);
 
     List<Item> findByIsActive(Boolean isActive);
 

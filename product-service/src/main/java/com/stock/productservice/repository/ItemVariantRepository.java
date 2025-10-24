@@ -12,15 +12,11 @@ import java.util.Optional;
 @Repository
 public interface ItemVariantRepository extends JpaRepository<ItemVariant, String> {
 
-    Optional<ItemVariant> findByCode(String code);
-
     Optional<ItemVariant> findBySku(String sku);
 
     List<ItemVariant> findByParentItemId(String parentItemId);
 
     List<ItemVariant> findByIsActive(Boolean isActive);
-
-    boolean existsByCode(String code);
 
     boolean existsBySku(String sku);
 
