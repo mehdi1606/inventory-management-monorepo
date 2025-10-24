@@ -1,10 +1,10 @@
+
 spring:
   application:
     name: product-service
 
 server:
   port: 8082
-
-error:
-  include-message: always
-  include-binding-errors: always
+  error:
+    include-message: always
+    include-binding-errors: always
