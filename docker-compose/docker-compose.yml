@@ -502,33 +502,32 @@ services:
       networks:
         - stock-network
       restart: unless-stopped
-
-    # Movement Service (add when ready)
-    # movement-service:
-    #   build:
-    #     context: ../movement-service
-    #     dockerfile: Dockerfile
-    #   container_name: movement-service
-    #   depends_on:
-    #     postgres-movement:
-    #       condition: service_healthy
-    #     kafka:
-    #       condition: service_healthy
-    #     redis:
-    #       condition: service_healthy
-    #   ports:
-    #     - "8084:8084"
-    #   environment:
-    #     SPRING_PROFILES_ACTIVE: docker
-    #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-movement:5432/movement_db
-    #     SPRING_DATASOURCE_USERNAME: movement_user
-    #     SPRING_DATASOURCE_PASSWORD: movement_pass
-    #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    #     SPRING_DATA_REDIS_HOST: redis
-    #     SPRING_DATA_REDIS_PORT: 6379
-    #   networks:
-    #     - stock-network
-    #   restart: unless-stopped
+    # Movement Service
+  movement-service:
+      build:
+        context: ../movement-service
+        dockerfile: Dockerfile
+      container_name: movement-service
+      depends_on:
+        postgres-movement:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      ports:
+        - "8084:8084"
+      environment:
+        SPRING_PROFILES_ACTIVE: docker
+        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-movement:5432/movement_db
+        SPRING_DATASOURCE_USERNAME: movement_user
+        SPRING_DATASOURCE_PASSWORD: movement_pass
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+        SPRING_DATA_REDIS_HOST: redis
+        SPRING_DATA_REDIS_PORT: 6379
+      networks:
+        - stock-network
+      restart: unless-stopped
 
     # Quality Service (add when ready)
     # quality-service:
