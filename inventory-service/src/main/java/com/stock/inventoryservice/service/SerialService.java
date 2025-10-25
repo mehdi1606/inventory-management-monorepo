@@ -2,6 +2,7 @@ package com.stock.inventoryservice.service;
 
 import com.stock.inventoryservice.dto.*;
 import com.stock.inventoryservice.dto.request.SerialCreateRequest;
+import com.stock.inventoryservice.dto.request.SerialUpdateRequest;
 
 import java.util.List;
 

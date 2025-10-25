@@ -68,16 +68,16 @@ public interface LotRepository extends JpaRepository<Lot, String> {
      */
     @Query("SELECT l FROM Lot l WHERE l.expiryDate <= :date " +
             "AND l.expiryDate > CURRENT_DATE " +
-            "AND l.status = 'AVAILABLE'")
+            "AND l.status = 'ACTIVE'")
     List<Lot> findLotsExpiringWithinDays(@Param("date") LocalDate date);
 
     // ===== ACTIVE LOTS QUERIES =====
 
     /**
-     * Find active lots for an item (not expired, status AVAILABLE)
+     * Find active lots for an item (not expired, status ACTIVE)
      */
     @Query("SELECT l FROM Lot l WHERE l.itemId = :itemId " +
-            "AND l.status = 'AVAILABLE' " +
+            "AND l.status = 'ACTIVE' " +
             "AND (l.expiryDate IS NULL OR l.expiryDate > CURRENT_DATE)")
     List<Lot> findActiveLotsForItem(@Param("itemId") String itemId);
 
@@ -85,7 +85,7 @@ public interface LotRepository extends JpaRepository<Lot, String> {
      * Find active lots for an item ordered by expiry date (FEFO - First Expired First Out)
      */
     @Query("SELECT l FROM Lot l WHERE l.itemId = :itemId " +
-            "AND l.status = 'AVAILABLE' " +
+            "AND l.status = 'ACTIVE' " +
             "AND (l.expiryDate IS NULL OR l.expiryDate > CURRENT_DATE) " +
             "ORDER BY l.expiryDate ASC NULLS LAST")
     List<Lot> findActiveLotsForItemOrderedByExpiry(@Param("itemId") String itemId);
@@ -139,4 +139,16 @@ public interface LotRepository extends JpaRepository<Lot, String> {
      */
     @Query("SELECT DISTINCT l.itemId FROM Lot l")
     List<String> findAllDistinctItemIds();
+
+    // ===== ADDITIONAL QUERIES FOR SERVICE LAYER (ADDED IN STEP 5) =====
+
+    /**
+     * Find lots expiring before a specific date (simple query method)
+     */
+    List<Lot> findByExpiryDateBefore(LocalDate date);
+
+    /**
+     * Find lots expiring between two dates (simple query method)
+     */
+    List<Lot> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
 }

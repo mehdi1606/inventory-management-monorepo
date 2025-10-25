@@ -1,4 +1,3 @@
-// inventory-service/src/main/java/com/stock/inventoryservice/repository/SerialRepository.java
 package com.stock.inventoryservice.repository;
 
 import com.stock.inventoryservice.entity.Serial;
@@ -41,6 +40,20 @@ public interface SerialRepository extends JpaRepository<Serial, String> {
      */
     List<Serial> findByLocationId(String locationId);
 
+    // ===== LOT-RELATED QUERIES (ADDED FIX) =====
+
+    /**
+     * Find serials by lot ID
+     */
+    @Query("SELECT s FROM Serial s WHERE s.itemId IN (SELECT i.itemId FROM Inventory i WHERE i.lotId = :lotId)")
+    List<Serial> findByLotId(@Param("lotId") String lotId);
+
+    /**
+     * Count serials by lot ID
+     */
+    @Query("SELECT COUNT(s) FROM Serial s WHERE s.itemId IN (SELECT i.itemId FROM Inventory i WHERE i.lotId = :lotId)")
+    Long countByLotId(@Param("lotId") String lotId);
+
     // ===== MULTI-CRITERIA QUERIES =====
 
     /**
@@ -79,19 +92,19 @@ public interface SerialRepository extends JpaRepository<Serial, String> {
     /**
      * Find serials that are quarantined
      */
-    @Query("SELECT s FROM Serial s WHERE s.status = 'QUARANTINED'")
+    @Query("SELECT s FROM Serial s WHERE s.status = 'DEFECTIVE'")
     List<Serial> findQuarantinedSerials();
 
     /**
      * Find serials that are damaged
      */
-    @Query("SELECT s FROM Serial s WHERE s.status = 'DAMAGED'")
+    @Query("SELECT s FROM Serial s WHERE s.status = 'DEFECTIVE'")
     List<Serial> findDamagedSerials();
 
     /**
      * Find serials that are returned
      */
-    @Query("SELECT s FROM Serial s WHERE s.status = 'RETURNED'")
+    @Query("SELECT s FROM Serial s WHERE s.status = 'RETURNING'")
     List<Serial> findReturnedSerials();
 
     // ===== EXISTENCE CHECKS =====

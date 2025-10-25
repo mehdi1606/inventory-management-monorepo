@@ -180,4 +180,16 @@ public interface InventoryRepository extends JpaRepository<Inventory, String> {
      */
     @Query("SELECT i FROM Inventory i WHERE i.lastCountDate < :date OR i.lastCountDate IS NULL")
     List<Inventory> findInventoryNeedingCycleCount(@Param("date") LocalDate date);
+
+    // ===== ADDITIONAL QUERIES FOR SERVICE LAYER (ADDED IN STEP 5) =====
+
+    /**
+     * Find inventory records with quantity on hand less than threshold (for low stock alerts)
+     */
+    List<Inventory> findByQuantityOnHandLessThan(Double threshold);
+
+    /**
+     * Find inventory records expiring before a specific date (simple query method)
+     */
+    List<Inventory> findByExpiryDateBefore(LocalDate date);
 }

@@ -2,9 +2,10 @@ package com.stock.inventoryservice.service.impl;
 
 import com.stock.inventoryservice.dto.*;
 import com.stock.inventoryservice.dto.request.SerialCreateRequest;
+import com.stock.inventoryservice.dto.request.SerialUpdateRequest;
 import com.stock.inventoryservice.entity.Serial;
 import com.stock.inventoryservice.entity.SerialStatus;
-
+import com.stock.inventoryservice.event.dto.SerialEvent;
 import com.stock.inventoryservice.exception.DuplicateResourceException;
 import com.stock.inventoryservice.exception.ResourceNotFoundException;
 import com.stock.inventoryservice.repository.SerialRepository;
@@ -45,9 +46,8 @@ public class SerialServiceImpl implements SerialService {
                 .code(request.getCode())
                 .itemId(request.getItemId())
                 .serialNumber(request.getSerialNumber())
-                .lotId(request.getLotId())
                 .locationId(request.getLocationId())
-                .status(SerialStatus.AVAILABLE)
+                .status(request.getStatus() != null ? request.getStatus() : SerialStatus.IN_STOCK)
                 .build();
 
         Serial savedSerial = serialRepository.save(serial);
@@ -159,7 +159,7 @@ public class SerialServiceImpl implements SerialService {
     public List<SerialDTO> getAvailableSerials(String itemId) {
         log.debug("Fetching available serials for item: {}", itemId);
 
-        return serialRepository.findByItemIdAndStatus(itemId, SerialStatus.AVAILABLE).stream()
+        return serialRepository.findByItemIdAndStatus(itemId, SerialStatus.IN_STOCK).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -179,9 +179,6 @@ public class SerialServiceImpl implements SerialService {
                 throw new DuplicateResourceException("Serial number " + request.getSerialNumber() + " already exists");
             }
             serial.setSerialNumber(request.getSerialNumber());
-        }
-        if (request.getLotId() != null) {
-            serial.setLotId(request.getLotId());
         }
         if (request.getLocationId() != null) {
             serial.setLocationId(request.getLocationId());
@@ -270,7 +267,7 @@ public class SerialServiceImpl implements SerialService {
         log.debug("Checking availability of serial: {}", serialNumber);
 
         return serialRepository.findBySerialNumber(serialNumber)
-                .map(serial -> serial.getStatus() == SerialStatus.AVAILABLE)
+                .map(serial -> serial.getStatus() == SerialStatus.IN_STOCK)
                 .orElse(false);
     }
 
@@ -282,7 +279,7 @@ public class SerialServiceImpl implements SerialService {
                 .serialCode(serial.getCode())
                 .itemId(serial.getItemId())
                 .serialNumber(serial.getSerialNumber())
-                .lotId(serial.getLotId())
+                .lotId(null) // Serial entity doesn't have lotId
                 .locationId(serial.getLocationId())
                 .status(serial.getStatus().name())
                 .eventType(eventType)
@@ -298,10 +295,10 @@ public class SerialServiceImpl implements SerialService {
                 .code(serial.getCode())
                 .itemId(serial.getItemId())
                 .serialNumber(serial.getSerialNumber())
-                .lotId(serial.getLotId())
-                .locationId(serial.getLocationId())
                 .status(serial.getStatus())
+                .locationId(serial.getLocationId())
                 .createdAt(serial.getCreatedAt())
+                .updatedAt(serial.getUpdatedAt())
                 .build();
     }
 }

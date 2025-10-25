@@ -5,9 +5,10 @@ import com.stock.inventoryservice.dto.cache.ItemCacheDTO;
 import com.stock.inventoryservice.dto.request.InventoryAdjustmentRequest;
 import com.stock.inventoryservice.dto.request.InventoryCreateRequest;
 import com.stock.inventoryservice.dto.request.InventoryTransferRequest;
+import com.stock.inventoryservice.dto.request.InventoryUpdateRequest;
 import com.stock.inventoryservice.entity.Inventory;
 import com.stock.inventoryservice.entity.InventoryStatus;
-
+import com.stock.inventoryservice.event.dto.InventoryEvent;
 import com.stock.inventoryservice.exception.InsufficientStockException;
 import com.stock.inventoryservice.exception.ResourceNotFoundException;
 import com.stock.inventoryservice.repository.InventoryRepository;
@@ -56,11 +57,11 @@ public class InventoryServiceImpl implements InventoryService {
                 .lotId(request.getLotId())
                 .serialId(request.getSerialId())
                 .quantityOnHand(request.getQuantityOnHand() != null ? request.getQuantityOnHand() : 0.0)
-                .quantityReserved(0.0)
-                .quantityDamaged(0.0)
+                .quantityReserved(request.getQuantityReserved() != null ? request.getQuantityReserved() : 0.0)
+                .quantityDamaged(request.getQuantityDamaged() != null ? request.getQuantityDamaged() : 0.0)
                 .uom(request.getUom())
-                .status(InventoryStatus.AVAILABLE)
-                .cost(request.getCost())
+                .status(request.getStatus())
+                .unitCost(request.getUnitCost())
                 .expiryDate(request.getExpiryDate())
                 .manufactureDate(request.getManufactureDate())
                 .attributes(request.getAttributes())
@@ -161,24 +162,23 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryDTO adjustQuantity(String id, InventoryAdjustmentRequest request) {
-        log.info("Adjusting quantity for inventory: {} by {}", id, request.getQuantityChange());
+        log.info("Adjusting quantity for inventory: {} to new quantity: {}", id, request.getNewQuantity());
 
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + id));
 
         Double previousQuantity = inventory.getQuantityOnHand();
-        Double newQuantity = previousQuantity + request.getQuantityChange();
 
-        if (newQuantity < 0) {
+        if (request.getNewQuantity() < 0) {
             throw new InsufficientStockException(
-                    "Insufficient stock. Current: " + previousQuantity + ", Requested: " + request.getQuantityChange());
+                    "Quantity cannot be negative. Requested: " + request.getNewQuantity());
         }
 
-        inventory.setQuantityOnHand(newQuantity);
-        inventory.setLastMovementAt(LocalDateTime.now());
+        inventory.setQuantityOnHand(request.getNewQuantity());
+        inventory.setLastCountDate(LocalDate.now());
 
         Inventory savedInventory = inventoryRepository.save(inventory);
-        log.info("Quantity adjusted from {} to {}", previousQuantity, newQuantity);
+        log.info("Quantity adjusted from {} to {}", previousQuantity, request.getNewQuantity());
 
         publishInventoryEvent(savedInventory, "ADJUSTED");
 
@@ -234,29 +234,29 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public InventoryDTO transferInventory(InventoryTransferRequest request) {
         log.info("Transferring {} units of item {} from {} to {}",
-                request.getQuantity(), request.getItemId(),
-                request.getFromLocationId(), request.getToLocationId());
+                request.getQuantity(), request.getItemVariantId(),
+                request.getSourceLocationId(), request.getDestinationLocationId());
 
         // Reduce from source
         Inventory fromInventory = inventoryRepository
-                .findByItemIdAndLocationId(request.getItemId(), request.getFromLocationId())
+                .findByItemIdAndLocationId(request.getItemVariantId(), request.getSourceLocationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Source inventory not found"));
 
-        if (fromInventory.getAvailableQuantity() < request.getQuantity()) {
+        Double availableQuantity = fromInventory.getAvailableQuantity();
+        if (availableQuantity < request.getQuantity().doubleValue()) {
             throw new InsufficientStockException("Insufficient stock at source location");
         }
 
-        fromInventory.setQuantityOnHand(fromInventory.getQuantityOnHand() - request.getQuantity());
-        fromInventory.setLastMovementAt(LocalDateTime.now());
+        fromInventory.setQuantityOnHand(fromInventory.getQuantityOnHand() - request.getQuantity().doubleValue());
         inventoryRepository.save(fromInventory);
 
         // Add to destination
         Inventory toInventory = inventoryRepository
-                .findByItemIdAndLocationId(request.getItemId(), request.getToLocationId())
+                .findByItemIdAndLocationId(request.getItemVariantId(), request.getDestinationLocationId())
                 .orElseGet(() -> Inventory.builder()
-                        .itemId(request.getItemId())
-                        .warehouseId(request.getToWarehouseId())
-                        .locationId(request.getToLocationId())
+                        .itemId(request.getItemVariantId())
+                        .warehouseId(fromInventory.getWarehouseId()) // Assuming same warehouse
+                        .locationId(request.getDestinationLocationId())
                         .quantityOnHand(0.0)
                         .quantityReserved(0.0)
                         .quantityDamaged(0.0)
@@ -264,8 +264,7 @@ public class InventoryServiceImpl implements InventoryService {
                         .uom(fromInventory.getUom())
                         .build());
 
-        toInventory.setQuantityOnHand(toInventory.getQuantityOnHand() + request.getQuantity());
-        toInventory.setLastMovementAt(LocalDateTime.now());
+        toInventory.setQuantityOnHand(toInventory.getQuantityOnHand() + request.getQuantity().doubleValue());
         Inventory savedInventory = inventoryRepository.save(toInventory);
 
         publishInventoryEvent(savedInventory, "TRANSFERRED");
@@ -280,14 +279,26 @@ public class InventoryServiceImpl implements InventoryService {
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + id));
 
+        if (request.getQuantityOnHand() != null) {
+            inventory.setQuantityOnHand(request.getQuantityOnHand());
+        }
+        if (request.getQuantityReserved() != null) {
+            inventory.setQuantityReserved(request.getQuantityReserved());
+        }
+        if (request.getQuantityDamaged() != null) {
+            inventory.setQuantityDamaged(request.getQuantityDamaged());
+        }
         if (request.getStatus() != null) {
             inventory.setStatus(request.getStatus());
         }
-        if (request.getCost() != null) {
-            inventory.setCost(request.getCost());
+        if (request.getUnitCost() != null) {
+            inventory.setUnitCost(request.getUnitCost());
         }
         if (request.getExpiryDate() != null) {
             inventory.setExpiryDate(request.getExpiryDate());
+        }
+        if (request.getLastCountDate() != null) {
+            inventory.setLastCountDate(request.getLastCountDate());
         }
         if (request.getAttributes() != null) {
             inventory.setAttributes(request.getAttributes());
@@ -369,9 +380,14 @@ public class InventoryServiceImpl implements InventoryService {
         InventoryEvent event = InventoryEvent.builder()
                 .inventoryId(inventory.getId())
                 .itemId(inventory.getItemId())
+                .warehouseId(inventory.getWarehouseId())
                 .locationId(inventory.getLocationId())
+                .lotId(inventory.getLotId())
+                .serialId(inventory.getSerialId())
                 .quantityOnHand(inventory.getQuantityOnHand())
                 .quantityReserved(inventory.getQuantityReserved())
+                .quantityDamaged(inventory.getQuantityDamaged())
+                .availableQuantity(inventory.getAvailableQuantity())
                 .eventType(eventType)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -393,18 +409,30 @@ public class InventoryServiceImpl implements InventoryService {
                 .availableQuantity(inventory.getAvailableQuantity())
                 .uom(inventory.getUom())
                 .status(inventory.getStatus())
-                .cost(inventory.getCost())
+                .unitCost(inventory.getUnitCost())
                 .expiryDate(inventory.getExpiryDate())
                 .manufactureDate(inventory.getManufactureDate())
-                .lastMovementAt(inventory.getLastMovementAt())
-                .lastReconciliationAt(inventory.getLastReconciliationAt())
+                .lastCountDate(inventory.getLastCountDate())
                 .attributes(inventory.getAttributes())
+                .version(inventory.getVersion())
                 .createdAt(inventory.getCreatedAt())
                 .updatedAt(inventory.getUpdatedAt())
                 .build();
     }
 
     private InventoryWithItemDTO mapToEnrichedDTO(Inventory inventory, ItemCacheDTO item) {
+        InventoryWithItemDTO.ItemDetailsDTO itemDetails = InventoryWithItemDTO.ItemDetailsDTO.builder()
+                .sku(item.getSku())
+                .name(item.getName())
+                .categoryId(item.getCategoryId())
+                .categoryName(item.getCategoryName())
+                .isActive(item.getIsActive())
+                .isSerialized(item.getIsSerialized())
+                .isLotManaged(item.getIsLotManaged())
+                .shelfLifeDays(item.getShelfLifeDays())
+                .imageUrl(item.getImageUrl())
+                .build();
+
         return InventoryWithItemDTO.builder()
                 .id(inventory.getId())
                 .itemId(inventory.getItemId())
@@ -418,15 +446,14 @@ public class InventoryServiceImpl implements InventoryService {
                 .availableQuantity(inventory.getAvailableQuantity())
                 .uom(inventory.getUom())
                 .status(inventory.getStatus())
-                .cost(inventory.getCost())
+                .unitCost(inventory.getUnitCost())
                 .expiryDate(inventory.getExpiryDate())
                 .manufactureDate(inventory.getManufactureDate())
-                .lastMovementAt(inventory.getLastMovementAt())
-                .lastReconciliationAt(inventory.getLastReconciliationAt())
-                .attributes(inventory.getAttributes())
+                .lastCountDate(inventory.getLastCountDate())
+                .version(inventory.getVersion())
                 .createdAt(inventory.getCreatedAt())
                 .updatedAt(inventory.getUpdatedAt())
-                .item(item)
+                .itemDetails(itemDetails)
                 .build();
     }
 }

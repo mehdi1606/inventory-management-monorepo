@@ -2,6 +2,7 @@ package com.stock.inventoryservice.service;
 
 import com.stock.inventoryservice.dto.*;
 import com.stock.inventoryservice.dto.request.LotCreateRequest;
+import com.stock.inventoryservice.dto.request.LotUpdateRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,7 +24,7 @@ public interface LotService {
     List<LotDTO> getActiveLotsForItem(String itemId);
 
     // Update & Delete
-    LotDTO updateLot(String id, LotUpdateRequest request);
+            LotDTO updateLot(String id, LotUpdateRequest request);
     LotDTO updateLotStatus(String id, String status);
     void deleteLot(String id);
 
