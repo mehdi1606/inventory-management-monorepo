@@ -106,4 +106,4 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-      environment: inventoryion
+      environment: production

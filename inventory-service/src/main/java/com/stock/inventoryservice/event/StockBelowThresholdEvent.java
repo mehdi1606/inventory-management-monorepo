@@ -1,5 +1,4 @@
-
-package com.stock.inventoryservice.event.dto;
+package com.stock.inventoryservice.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,11 +14,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class StockBelowThresholdEvent implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private String itemId;
     private String locationId;
     private String warehouseId;
     private Double currentQuantity;
     private Double threshold;
     private String alertLevel; // WARNING, CRITICAL
+    private String itemName;
+    private String itemSku;
     private LocalDateTime timestamp;
 }
