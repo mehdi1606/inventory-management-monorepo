@@ -1,29 +1,24 @@
 package com.stock.qualityservice.service.impl;
 
 import com.stock.qualityservice.dto.request.QualityControlRequest;
-import com.stock.qualityservice.dto.request.InspectionCompleteRequest;
-import com.stock.qualityservice.dto.request.BulkInspectionRequest;
-import com.stock.qualityservice.dto.request.QualityControlFilterRequest;
-import com.stock.qualityservice.dto.request.InspectionResultRequest;
+import com.stock.qualityservice.dto.request.QualityControlUpdateRequest;
 import com.stock.qualityservice.dto.response.QualityControlResponse;
-import com.stock.qualityservice.dto.response.InspectionSummaryResponse;
 import com.stock.qualityservice.dto.response.InspectionResultResponse;
 import com.stock.qualityservice.entity.QualityControl;
 import com.stock.qualityservice.entity.InspectionResult;
 import com.stock.qualityservice.entity.QCStatus;
-import com.stock.qualityservice.entity.QCType;
 import com.stock.qualityservice.entity.Disposition;
 import com.stock.qualityservice.exception.*;
 import com.stock.qualityservice.repository.QualityControlRepository;
-import com.stock.qualityservice.repository.InspectionResultRepository;
 import com.stock.qualityservice.service.QualityControlService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -36,13 +31,11 @@ import java.util.stream.Collectors;
 public class QualityControlServiceImpl implements QualityControlService {
 
     private final QualityControlRepository qualityControlRepository;
-    private final InspectionResultRepository inspectionResultRepository;
 
     @Override
-    public QualityControlResponse createInspection(QualityControlRequest request) {
-        log.info("Creating inspection for item ID: {}", request.getItemId());
+    public QualityControlResponse createQualityControl(QualityControlRequest request) {
+        log.info("Creating quality control for item ID: {}", request.getItemId());
 
-        // Check for duplicate active inspection
         List<QCStatus> activeStatuses = Arrays.asList(QCStatus.PENDING, QCStatus.IN_PROGRESS);
         if (qualityControlRepository.existsByItemIdAndLotIdAndStatusIn(
                 request.getItemId(), request.getLotId(), activeStatuses)) {
@@ -53,48 +46,17 @@ public class QualityControlServiceImpl implements QualityControlService {
         inspection.setInspectionNumber(generateInspectionNumber());
         QualityControl savedInspection = qualityControlRepository.save(inspection);
 
-        log.info("Inspection created successfully with ID: {}", savedInspection.getId());
+        log.info("Quality control created successfully with ID: {}", savedInspection.getId());
         return mapToResponse(savedInspection);
     }
 
     @Override
-    public List<QualityControlResponse> createBulkInspections(BulkInspectionRequest request) {
-        log.info("Creating bulk inspections for {} items", request.getItemIds().size());
-
-        List<QualityControl> inspections = new ArrayList<>();
-
-        for (String itemId : request.getItemIds()) {
-            QualityControl inspection = new QualityControl();
-            inspection.setInspectionNumber(generateInspectionNumber());
-            inspection.setItemId(itemId);
-            inspection.setQuantityInspected(0.0); // To be filled later
-            inspection.setInspectionType(request.getInspectionType());
-            inspection.setStatus(QCStatus.PENDING);
-            inspection.setQualityProfileId(request.getQualityProfileId());
-            inspection.setSamplingPlanId(request.getSamplingPlanId());
-            inspection.setInspectorId(request.getInspectorId());
-            inspection.setInspectionLocationId(request.getInspectionLocationId());
-            inspection.setScheduledDate(request.getScheduledDate());
-
-            inspections.add(inspection);
-        }
-
-        List<QualityControl> savedInspections = qualityControlRepository.saveAll(inspections);
-
-        log.info("Bulk inspections created successfully: {} inspections", savedInspections.size());
-        return savedInspections.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public QualityControlResponse updateInspection(String id, QualityControlRequest request) {
-        log.info("Updating inspection ID: {}", id);
+    public QualityControlResponse updateQualityControl(String id, QualityControlUpdateRequest request) {
+        log.info("Updating quality control ID: {}", id);
 
         QualityControl inspection = qualityControlRepository.findById(id)
                 .orElseThrow(() -> new InspectionNotFoundException(id));
 
-        // Check if inspection is already completed
         if (inspection.getStatus() == QCStatus.PASSED || inspection.getStatus() == QCStatus.FAILED) {
             throw new InspectionAlreadyCompletedException(id);
         }
@@ -102,14 +64,14 @@ public class QualityControlServiceImpl implements QualityControlService {
         updateEntityFromRequest(inspection, request);
         QualityControl updatedInspection = qualityControlRepository.save(inspection);
 
-        log.info("Inspection updated successfully: {}", id);
+        log.info("Quality control updated successfully: {}", id);
         return mapToResponse(updatedInspection);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public QualityControlResponse getInspectionById(String id) {
-        log.info("Fetching inspection by ID: {}", id);
+    public QualityControlResponse getQualityControlById(String id) {
+        log.info("Fetching quality control by ID: {}", id);
 
         QualityControl inspection = qualityControlRepository.findById(id)
                 .orElseThrow(() -> new InspectionNotFoundException(id));
@@ -119,70 +81,43 @@ public class QualityControlServiceImpl implements QualityControlService {
 
     @Override
     @Transactional(readOnly = true)
-    public QualityControlResponse getInspectionByNumber(String inspectionNumber) {
-        log.info("Fetching inspection by number: {}", inspectionNumber);
-
-        QualityControl inspection = qualityControlRepository.findByInspectionNumber(inspectionNumber)
-                .orElseThrow(() -> new InspectionNotFoundException("inspectionNumber", inspectionNumber));
-
-        return mapToResponse(inspection);
+    public Page<QualityControlResponse> getAllQualityControls(Pageable pageable) {
+        log.info("Fetching all quality controls with pagination");
+        return qualityControlRepository.findAll(pageable)
+                .map(this::mapToResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<QualityControlResponse> getAllInspections() {
-        log.info("Fetching all inspections");
-
-        return qualityControlRepository.findAll().stream()
+    public List<QualityControlResponse> getQualityControlsByProductId(String productId) {
+        log.info("Fetching quality controls for product ID: {}", productId);
+        return qualityControlRepository.findByItemId(productId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInspectionsByItemId(String itemId) {
-        log.info("Fetching inspections for item ID: {}", itemId);
-
-        return qualityControlRepository.findByItemId(itemId).stream()
+    public List<QualityControlResponse> getQualityControlsByBatchNumber(String batchNumber) {
+        log.info("Fetching quality controls for batch number: {}", batchNumber);
+        return qualityControlRepository.findByLotId(batchNumber).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInspectionsByLotId(String lotId) {
-        log.info("Fetching inspections for lot ID: {}", lotId);
-
-        return qualityControlRepository.findByLotId(lotId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<QualityControlResponse> getQualityControlsByStatus(String status, Pageable pageable) {
+        log.info("Fetching quality controls by status: {}", status);
+        QCStatus qcStatus = QCStatus.valueOf(status.toUpperCase());
+        return qualityControlRepository.findByStatus(qcStatus, pageable)
+                .map(this::mapToResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInspectionsByStatus(QCStatus status) {
-        log.info("Fetching inspections by status: {}", status);
-
-        return qualityControlRepository.findByStatus(status).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInspectionsByType(QCType type) {
-        log.info("Fetching inspections by type: {}", type);
-
-        return qualityControlRepository.findByInspectionType(type).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInspectionsByInspector(String inspectorId) {
-        log.info("Fetching inspections for inspector ID: {}", inspectorId);
-
+    public List<QualityControlResponse> getQualityControlsByInspector(String inspectorId) {
+        log.info("Fetching quality controls for inspector ID: {}", inspectorId);
         return qualityControlRepository.findByInspectorId(inspectorId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -190,208 +125,84 @@ public class QualityControlServiceImpl implements QualityControlService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<QualityControlResponse> getPendingInspections() {
-        log.info("Fetching pending inspections");
-
-        return qualityControlRepository.findAllPendingInspections().stream()
+    public List<QualityControlResponse> getQualityControlsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        log.info("Fetching quality controls between {} and {}", startDate, endDate);
+        return qualityControlRepository.findByCreatedAtBetween(startDate, endDate).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInProgressInspections() {
-        log.info("Fetching in-progress inspections");
-
-        return qualityControlRepository.findAllInProgressInspections().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<QualityControlResponse> getInspectorActiveInspections(String inspectorId) {
-        log.info("Fetching active inspections for inspector ID: {}", inspectorId);
-
-        return qualityControlRepository.findActiveInspectionsByInspector(inspectorId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public QualityControlResponse startInspection(String id) {
-        log.info("Starting inspection ID: {}", id);
+    public QualityControlResponse updateQualityControlStatus(String id, String status) {
+        log.info("Updating status for quality control ID {} to {}", id, status);
 
         QualityControl inspection = qualityControlRepository.findById(id)
                 .orElseThrow(() -> new InspectionNotFoundException(id));
 
-        // Validate state
-        if (inspection.getStatus() != QCStatus.PENDING) {
-            throw new InvalidInspectionStateException(id, inspection.getStatus(), "start");
-        }
-
-        inspection.setStatus(QCStatus.IN_PROGRESS);
-        inspection.setStartTime(LocalDateTime.now());
+        QCStatus newStatus = QCStatus.valueOf(status.toUpperCase());
+        inspection.setStatus(newStatus);
 
         QualityControl updatedInspection = qualityControlRepository.save(inspection);
+        log.info("Quality control status updated successfully: {}", id);
 
-        log.info("Inspection started successfully: {}", id);
         return mapToResponse(updatedInspection);
     }
 
     @Override
-    public QualityControlResponse completeInspection(String id, InspectionCompleteRequest request) {
-        log.info("Completing inspection ID: {}", id);
+    public QualityControlResponse approveQualityControl(String id) {
+        log.info("Approving quality control ID: {}", id);
 
         QualityControl inspection = qualityControlRepository.findById(id)
                 .orElseThrow(() -> new InspectionNotFoundException(id));
 
-        // Validate state
-        if (inspection.getStatus() != QCStatus.IN_PROGRESS) {
-            throw new InvalidInspectionStateException(id, inspection.getStatus(), "complete");
-        }
-
-        inspection.setStatus(request.getDisposition() == Disposition.ACCEPT ? QCStatus.PASSED : QCStatus.FAILED);
-        inspection.setDisposition(request.getDisposition());
-        inspection.setPassedQuantity(request.getPassedQuantity());
-        inspection.setFailedQuantity(request.getFailedQuantity());
-        inspection.setInspectorNotes(request.getInspectorNotes());
-        inspection.setCorrectiveAction(request.getCorrectiveAction());
-        inspection.setEndTime(LocalDateTime.now());
-
-        // Calculate defect metrics
-        if (request.getFailedQuantity() != null && inspection.getQuantityInspected() != null) {
-            int defectCount = request.getFailedQuantity().intValue();
-            double defectRate = (request.getFailedQuantity() / inspection.getQuantityInspected()) * 100;
-            inspection.setDefectCount(defectCount);
-            inspection.setDefectRate(defectRate);
-        }
-
-        QualityControl completedInspection = qualityControlRepository.save(inspection);
-
-        // Save inspection results
-        if (request.getInspectionResults() != null && !request.getInspectionResults().isEmpty()) {
-            saveInspectionResults(completedInspection, request.getInspectionResults());
-        }
-
-        log.info("Inspection completed successfully: {}", id);
-        // TODO: Publish QualityInspectionCompletedEvent
-        return mapToResponse(completedInspection);
-    }
-
-    @Override
-    public QualityControlResponse approveInspection(String id, String approvedBy) {
-        log.info("Approving inspection ID: {} by: {}", id, approvedBy);
-
-        QualityControl inspection = qualityControlRepository.findById(id)
-                .orElseThrow(() -> new InspectionNotFoundException(id));
-
-        // Validate state
         if (inspection.getStatus() != QCStatus.PASSED && inspection.getStatus() != QCStatus.FAILED) {
             throw new InvalidInspectionStateException(id, inspection.getStatus(), "approve");
         }
 
-        inspection.setApprovedBy(approvedBy);
+        inspection.setApprovedBy("SYSTEM"); // TODO: Get from security context
         inspection.setApprovedAt(LocalDateTime.now());
+        inspection.setDisposition(Disposition.ACCEPT);
 
         QualityControl approvedInspection = qualityControlRepository.save(inspection);
+        log.info("Quality control approved successfully: {}", id);
 
-        log.info("Inspection approved successfully: {}", id);
-        // TODO: Publish ItemApprovedEvent or ItemRejectedEvent based on disposition
         return mapToResponse(approvedInspection);
     }
 
     @Override
-    public void deleteInspection(String id) {
-        log.info("Deleting inspection ID: {}", id);
+    public QualityControlResponse rejectQualityControl(String id, String reason) {
+        log.info("Rejecting quality control ID: {} with reason: {}", id, reason);
+
+        QualityControl inspection = qualityControlRepository.findById(id)
+                .orElseThrow(() -> new InspectionNotFoundException(id));
+
+        inspection.setStatus(QCStatus.FAILED);
+        inspection.setDisposition(Disposition.REJECT);
+        inspection.setInspectorNotes(reason);
+        inspection.setApprovedBy("SYSTEM"); // TODO: Get from security context
+        inspection.setApprovedAt(LocalDateTime.now());
+
+        QualityControl rejectedInspection = qualityControlRepository.save(inspection);
+        log.info("Quality control rejected successfully: {}", id);
+
+        return mapToResponse(rejectedInspection);
+    }
+
+    @Override
+    public void deleteQualityControl(String id) {
+        log.info("Deleting quality control ID: {}", id);
 
         if (!qualityControlRepository.existsById(id)) {
             throw new InspectionNotFoundException(id);
         }
 
         qualityControlRepository.deleteById(id);
-        log.info("Inspection deleted successfully: {}", id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<QualityControlResponse> filterInspections(QualityControlFilterRequest filter) {
-        log.info("Filtering inspections with criteria");
-
-        // TODO: Implement dynamic filtering based on filter criteria
-        // For now, returning all
-        return getAllInspections();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public InspectionSummaryResponse getInspectionSummary() {
-        log.info("Generating inspection summary");
-
-        InspectionSummaryResponse summary = new InspectionSummaryResponse();
-
-        summary.setTotalInspections(qualityControlRepository.count());
-        summary.setPassedInspections(qualityControlRepository.countByDisposition(Disposition.ACCEPT));
-        summary.setFailedInspections(qualityControlRepository.countByDisposition(Disposition.REJECT));
-        summary.setPendingInspections(qualityControlRepository.countByStatus(QCStatus.PENDING));
-        summary.setQuarantinedItems(qualityControlRepository.countByStatus(QCStatus.QUARANTINED));
-
-        // Calculate pass rate
-        if (summary.getTotalInspections() > 0) {
-            double passRate = (summary.getPassedInspections().doubleValue() / summary.getTotalInspections()) * 100;
-            summary.setOverallPassRate(passRate);
-        }
-
-        return summary;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public InspectionSummaryResponse getInspectionSummaryByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        log.info("Generating inspection summary for date range: {} to {}", startDate, endDate);
-
-        InspectionSummaryResponse summary = new InspectionSummaryResponse();
-
-        summary.setPassedInspections(qualityControlRepository.countPassedInspections(startDate, endDate));
-        summary.setFailedInspections(qualityControlRepository.countFailedInspections(startDate, endDate));
-        summary.setAverageDefectRate(qualityControlRepository.getAverageDefectRate(startDate, endDate));
-        summary.setTotalInspections(summary.getPassedInspections() + summary.getFailedInspections());
-
-        // Calculate pass rate
-        if (summary.getTotalInspections() > 0) {
-            double passRate = (summary.getPassedInspections().doubleValue() / summary.getTotalInspections()) * 100;
-            summary.setOverallPassRate(passRate);
-        }
-
-        return summary;
+        log.info("Quality control deleted successfully: {}", id);
     }
 
     // Helper methods
     private String generateInspectionNumber() {
         return "INS-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    private void saveInspectionResults(QualityControl inspection, List<InspectionResultRequest> resultRequests) {
-        List<InspectionResult> results = resultRequests.stream()
-                .map(request -> {
-                    InspectionResult result = new InspectionResult();
-                    result.setQualityControl(inspection);
-                    result.setTestParameter(request.getTestParameter());
-                    result.setExpectedValue(request.getExpectedValue());
-                    result.setActualValue(request.getActualValue());
-                    result.setUnitOfMeasure(request.getUnitOfMeasure());
-                    result.setMinValue(request.getMinValue());
-                    result.setMaxValue(request.getMaxValue());
-                    result.setIsPassed(request.getIsPassed());
-                    result.setDefectType(request.getDefectType());
-                    result.setDefectSeverity(request.getDefectSeverity());
-                    result.setRemarks(request.getRemarks());
-                    result.setSequenceOrder(request.getSequenceOrder());
-                    return result;
-                })
-                .collect(Collectors.toList());
-
-        inspectionResultRepository.saveAll(results);
     }
 
     private QualityControl mapToEntity(QualityControlRequest request) {
@@ -411,15 +222,25 @@ public class QualityControlServiceImpl implements QualityControlService {
         return inspection;
     }
 
-    private void updateEntityFromRequest(QualityControl inspection, QualityControlRequest request) {
-        inspection.setQuantityInspected(request.getQuantityInspected());
-        inspection.setInspectionType(request.getInspectionType());
-        inspection.setQualityProfileId(request.getQualityProfileId());
-        inspection.setSamplingPlanId(request.getSamplingPlanId());
-        inspection.setInspectorId(request.getInspectorId());
-        inspection.setInspectionLocationId(request.getInspectionLocationId());
-        inspection.setScheduledDate(request.getScheduledDate());
-        inspection.setQuarantineId(request.getQuarantineId());
+    private void updateEntityFromRequest(QualityControl inspection, QualityControlUpdateRequest request) {
+        if (request.getInspectionType() != null) {
+            // Convert string to enum if needed
+        }
+        if (request.getStatus() != null) {
+            inspection.setStatus(QCStatus.valueOf(request.getStatus().toUpperCase()));
+        }
+        if (request.getDefectCount() != null) {
+            inspection.setDefectCount(request.getDefectCount());
+        }
+        if (request.getDefectDescription() != null) {
+            inspection.setInspectorNotes(request.getDefectDescription());
+        }
+        if (request.getCorrectiveActions() != null) {
+            inspection.setCorrectiveAction(request.getCorrectiveActions());
+        }
+        if (request.getNotes() != null) {
+            inspection.setInspectorNotes(request.getNotes());
+        }
     }
 
     private QualityControlResponse mapToResponse(QualityControl inspection) {
@@ -454,7 +275,6 @@ public class QualityControlServiceImpl implements QualityControlService {
         response.setCreatedBy(inspection.getCreatedBy());
         response.setUpdatedBy(inspection.getUpdatedBy());
 
-        // Map inspection results
         if (inspection.getInspectionResults() != null && !inspection.getInspectionResults().isEmpty()) {
             List<InspectionResultResponse> resultResponses = inspection.getInspectionResults().stream()
                     .map(this::mapResultToResponse)

@@ -1,41 +1,44 @@
 package com.stock.qualityservice.service;
 
 import com.stock.qualityservice.dto.request.QuarantineRequest;
-import com.stock.qualityservice.dto.request.QuarantineReleaseRequest;
-import com.stock.qualityservice.dto.request.QuarantineFilterRequest;
+import com.stock.qualityservice.dto.request.QuarantineUpdateRequest;
 import com.stock.qualityservice.dto.response.QuarantineResponse;
 import com.stock.qualityservice.dto.response.QuarantineSummaryResponse;
-import com.stock.qualityservice.entity.QuarantineStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface QuarantineService {
 
     QuarantineResponse createQuarantine(QuarantineRequest request);
 
-    QuarantineResponse updateQuarantine(String id, QuarantineRequest request);
+    QuarantineResponse updateQuarantine(String id, QuarantineUpdateRequest request);
 
     QuarantineResponse getQuarantineById(String id);
 
-    List<QuarantineResponse> getAllQuarantines();
+    Page<QuarantineResponse> getAllQuarantines(Pageable pageable);
 
     List<QuarantineResponse> getQuarantinesByItemId(String itemId);
 
-    List<QuarantineResponse> getQuarantinesByLotId(String lotId);
+    List<QuarantineResponse> getQuarantinesByQualityControlId(String qualityControlId);
 
-    List<QuarantineResponse> getQuarantinesByStatus(QuarantineStatus status);
+    Page<QuarantineResponse> getQuarantinesByStatus(String status, Pageable pageable);
 
-    List<QuarantineResponse> getQuarantinesByInspector(String inspectorId);
+    List<QuarantineResponse> getActiveQuarantines();
 
-    List<QuarantineResponse> getOverdueQuarantines();
+    List<QuarantineResponse> getQuarantinesByLocation(String locationId);
 
-    QuarantineResponse releaseQuarantine(String id, QuarantineReleaseRequest request);
+    List<QuarantineResponse> getQuarantinesExpiringSoon(int days);
 
-    QuarantineResponse rejectQuarantine(String id, QuarantineReleaseRequest request);
+    QuarantineResponse updateQuarantineStatus(String id, String status);
+
+    QuarantineResponse releaseQuarantine(String id, String releaseNotes);
+
+    QuarantineResponse extendQuarantine(String id, LocalDateTime newEndDate, String reason);
 
     void deleteQuarantine(String id);
-
-    List<QuarantineResponse> filterQuarantines(QuarantineFilterRequest filter);
 
     QuarantineSummaryResponse getQuarantineSummary();
 }

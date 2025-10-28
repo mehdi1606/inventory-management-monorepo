@@ -4,6 +4,8 @@ import com.stock.qualityservice.entity.QualityControl;
 import com.stock.qualityservice.entity.QCStatus;
 import com.stock.qualityservice.entity.QCType;
 import com.stock.qualityservice.entity.Disposition;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,8 @@ public interface QualityControlRepository extends JpaRepository<QualityControl, 
     List<QualityControl> findByInspectionType(QCType inspectionType);
 
     List<QualityControl> findByStatus(QCStatus status);
+
+    Page<QualityControl> findByStatus(QCStatus status, Pageable pageable);
 
     List<QualityControl> findByDisposition(Disposition disposition);
 

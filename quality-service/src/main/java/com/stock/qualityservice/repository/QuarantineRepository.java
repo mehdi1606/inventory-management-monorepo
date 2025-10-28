@@ -3,6 +3,8 @@ package com.stock.qualityservice.repository;
 import com.stock.qualityservice.entity.Quarantine;
 import com.stock.qualityservice.entity.QuarantineStatus;
 import com.stock.qualityservice.entity.Disposition;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,11 +25,17 @@ public interface QuarantineRepository extends JpaRepository<Quarantine, String> 
 
     List<Quarantine> findByStatus(QuarantineStatus status);
 
+    Page<Quarantine> findByStatus(QuarantineStatus status, Pageable pageable);
+
     List<Quarantine> findByDisposition(Disposition disposition);
 
     List<Quarantine> findByInspectorId(String inspectorId);
 
     List<Quarantine> findByLocationId(String locationId);
+
+    List<Quarantine> findByStatusIn(List<QuarantineStatus> statuses);
+
+    List<Quarantine> findByExpectedReleaseDateBeforeAndStatus(LocalDateTime endDate, QuarantineStatus status);
 
     @Query("SELECT q FROM Quarantine q WHERE q.itemId = :itemId AND q.status = :status")
     List<Quarantine> findByItemIdAndStatus(@Param("itemId") String itemId, @Param("status") QuarantineStatus status);

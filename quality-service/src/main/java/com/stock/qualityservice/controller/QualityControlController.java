@@ -33,7 +33,7 @@ public class QualityControlController {
     @Operation(summary = "Create quality control", description = "Create a new quality control inspection")
     public ResponseEntity<QualityControlResponse> createQualityControl(
             @Valid @RequestBody QualityControlRequest request) {
-        log.info("Creating quality control for product: {}", request.getProductId());
+        log.info("Creating quality control for product: {}", request.getItemId());
         QualityControlResponse response = qualityControlService.createQualityControl(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -41,7 +41,7 @@ public class QualityControlController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quality control by ID")
-    public ResponseEntity<QualityControlResponse> getQualityControlById(@PathVariable Long id) {
+    public ResponseEntity<QualityControlResponse> getQualityControlById(@PathVariable String id) {
         log.info("Fetching quality control with ID: {}", id);
         QualityControlResponse response = qualityControlService.getQualityControlById(id);
         return ResponseEntity.ok(response);
@@ -60,7 +60,7 @@ public class QualityControlController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quality controls by product ID")
     public ResponseEntity<List<QualityControlResponse>> getQualityControlsByProductId(
-            @PathVariable Long productId) {
+            @PathVariable String productId) {
         log.info("Fetching quality controls for product: {}", productId);
         List<QualityControlResponse> response = qualityControlService.getQualityControlsByProductId(productId);
         return ResponseEntity.ok(response);
@@ -90,7 +90,7 @@ public class QualityControlController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quality controls by inspector")
     public ResponseEntity<List<QualityControlResponse>> getQualityControlsByInspector(
-            @PathVariable Long inspectorId) {
+            @PathVariable String inspectorId) {
         log.info("Fetching quality controls for inspector: {}", inspectorId);
         List<QualityControlResponse> response = qualityControlService.getQualityControlsByInspector(inspectorId);
         return ResponseEntity.ok(response);
@@ -111,7 +111,7 @@ public class QualityControlController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'ADMIN')")
     @Operation(summary = "Update quality control")
     public ResponseEntity<QualityControlResponse> updateQualityControl(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody QualityControlUpdateRequest request) {
         log.info("Updating quality control with ID: {}", id);
         QualityControlResponse response = qualityControlService.updateQualityControl(id, request);
@@ -122,7 +122,7 @@ public class QualityControlController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'ADMIN')")
     @Operation(summary = "Update quality control status")
     public ResponseEntity<QualityControlResponse> updateQualityControlStatus(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam String status) {
         log.info("Updating status for quality control ID {} to {}", id, status);
         QualityControlResponse response = qualityControlService.updateQualityControlStatus(id, status);
@@ -132,7 +132,7 @@ public class QualityControlController {
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Approve quality control")
-    public ResponseEntity<QualityControlResponse> approveQualityControl(@PathVariable Long id) {
+    public ResponseEntity<QualityControlResponse> approveQualityControl(@PathVariable String id) {
         log.info("Approving quality control with ID: {}", id);
         QualityControlResponse response = qualityControlService.approveQualityControl(id);
         return ResponseEntity.ok(response);
@@ -142,7 +142,7 @@ public class QualityControlController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Reject quality control")
     public ResponseEntity<QualityControlResponse> rejectQualityControl(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam String reason) {
         log.info("Rejecting quality control with ID: {}", id);
         QualityControlResponse response = qualityControlService.rejectQualityControl(id, reason);
@@ -152,7 +152,7 @@ public class QualityControlController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete quality control")
-    public ResponseEntity<Void> deleteQualityControl(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteQualityControl(@PathVariable String id) {
         log.info("Deleting quality control with ID: {}", id);
         qualityControlService.deleteQualityControl(id);
         return ResponseEntity.noContent().build();

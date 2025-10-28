@@ -1,6 +1,7 @@
 package com.stock.qualityservice.controller;
 
 import com.stock.qualityservice.dto.request.QuarantineRequest;
+import com.stock.qualityservice.dto.request.QuarantineUpdateRequest;
 import com.stock.qualityservice.dto.response.QuarantineResponse;
 import com.stock.qualityservice.service.QuarantineService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +33,7 @@ public class QuarantineController {
     @Operation(summary = "Create quarantine", description = "Create a new quarantine record")
     public ResponseEntity<QuarantineResponse> createQuarantine(
             @Valid @RequestBody QuarantineRequest request) {
-        log.info("Creating quarantine for product: {}", request.getProductId());
+        log.info("Creating quarantine for product: {}", request.getItemId());
         QuarantineResponse response = quarantineService.createQuarantine(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -40,9 +41,9 @@ public class QuarantineController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quarantine by ID")
-    public ResponseEntity<QuarantineResponse> getQuarantineById(@PathVariable Long id) {
+    public ResponseEntity<QuarantineResponse> getQuarantineById(@PathVariable String id) {
         log.info("Fetching quarantine with ID: {}", id);
-        QuarantineResponse response = quarantineService.getQuarantineById(String.valueOf(id));
+        QuarantineResponse response = quarantineService.getQuarantineById(id);
         return ResponseEntity.ok(response);
     }
 
@@ -58,9 +59,9 @@ public class QuarantineController {
     @GetMapping("/product/{productId}")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quarantines by product ID")
-    public ResponseEntity<List<QuarantineResponse>> getQuarantinesByProductId(@PathVariable Long productId) {
+    public ResponseEntity<List<QuarantineResponse>> getQuarantinesByProductId(@PathVariable String productId) {
         log.info("Fetching quarantines for product: {}", productId);
-        List<QuarantineResponse> response = quarantineService.getQuarantinesByProductId(productId);
+        List<QuarantineResponse> response = quarantineService.getQuarantinesByItemId(productId);
         return ResponseEntity.ok(response);
     }
 
@@ -68,7 +69,7 @@ public class QuarantineController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quarantines by quality control ID")
     public ResponseEntity<List<QuarantineResponse>> getQuarantinesByQualityControlId(
-            @PathVariable Long qualityControlId) {
+            @PathVariable String qualityControlId) {
         log.info("Fetching quarantines for quality control: {}", qualityControlId);
         List<QuarantineResponse> response = quarantineService.getQuarantinesByQualityControlId(qualityControlId);
         return ResponseEntity.ok(response);
@@ -96,7 +97,7 @@ public class QuarantineController {
     @GetMapping("/location/{locationId}")
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'WAREHOUSE_MANAGER', 'ADMIN')")
     @Operation(summary = "Get quarantines by location")
-    public ResponseEntity<List<QuarantineResponse>> getQuarantinesByLocation(@PathVariable Long locationId) {
+    public ResponseEntity<List<QuarantineResponse>> getQuarantinesByLocation(@PathVariable String locationId) {
         log.info("Fetching quarantines for location: {}", locationId);
         List<QuarantineResponse> response = quarantineService.getQuarantinesByLocation(locationId);
         return ResponseEntity.ok(response);
@@ -115,7 +116,7 @@ public class QuarantineController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'QUALITY_INSPECTOR', 'ADMIN')")
     @Operation(summary = "Update quarantine")
     public ResponseEntity<QuarantineResponse> updateQuarantine(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody QuarantineUpdateRequest request) {
         log.info("Updating quarantine with ID: {}", id);
         QuarantineResponse response = quarantineService.updateQuarantine(id, request);
@@ -126,7 +127,7 @@ public class QuarantineController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Update quarantine status")
     public ResponseEntity<QuarantineResponse> updateQuarantineStatus(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam String status) {
         log.info("Updating status for quarantine ID {} to {}", id, status);
         QuarantineResponse response = quarantineService.updateQuarantineStatus(id, status);
@@ -137,7 +138,7 @@ public class QuarantineController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Release quarantine")
     public ResponseEntity<QuarantineResponse> releaseQuarantine(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam String releaseNotes) {
         log.info("Releasing quarantine with ID: {}", id);
         QuarantineResponse response = quarantineService.releaseQuarantine(id, releaseNotes);
@@ -148,7 +149,7 @@ public class QuarantineController {
     @PreAuthorize("hasAnyRole('QUALITY_MANAGER', 'ADMIN')")
     @Operation(summary = "Extend quarantine period")
     public ResponseEntity<QuarantineResponse> extendQuarantine(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam LocalDateTime newEndDate,
             @RequestParam String reason) {
         log.info("Extending quarantine ID {} to {}", id, newEndDate);
@@ -159,7 +160,7 @@ public class QuarantineController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete quarantine")
-    public ResponseEntity<Void> deleteQuarantine(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteQuarantine(@PathVariable String id) {
         log.info("Deleting quarantine with ID: {}", id);
         quarantineService.deleteQuarantine(id);
         return ResponseEntity.noContent().build();
