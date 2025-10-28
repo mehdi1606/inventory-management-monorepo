@@ -530,31 +530,31 @@ services:
       restart: unless-stopped
 
     # Quality Service (add when ready)
-  # quality-service:
-  #     build:
-  #       context: ../quality-service
-  #       dockerfile: Dockerfile
-  #     container_name: quality-service
-  #     depends_on:
-  #       postgres-quality:
-  #         condition: service_healthy
-  #       kafka:
-  #         condition: service_healthy
-  #       redis:
-  #         condition: service_healthy
-  #     ports:
-  #       - "8087:8087"
-  #     environment:
-  #       SPRING_PROFILES_ACTIVE: docker
-  #       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-quality:5432/quality_db
-  #       SPRING_DATASOURCE_USERNAME: quality_user
-  #       SPRING_DATASOURCE_PASSWORD: quality_pass
-  #       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-  #       SPRING_DATA_REDIS_HOST: redis
-  #       SPRING_DATA_REDIS_PORT: 6379
-  #     networks:
-  #       - stock-network
-  #     restart: unless-stopped
+  quality-service:
+      build:
+        context: ../quality-service
+        dockerfile: Dockerfile
+      container_name: quality-service
+      depends_on:
+        postgres-quality:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      ports:
+        - "8087:8087"
+      environment:
+        SPRING_PROFILES_ACTIVE: docker
+        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-quality:5432/quality_db
+        SPRING_DATASOURCE_USERNAME: quality_user
+        SPRING_DATASOURCE_PASSWORD: quality_pass
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+        SPRING_DATA_REDIS_HOST: redis
+        SPRING_DATA_REDIS_PORT: 6379
+      networks:
+        - stock-network
+      restart: unless-stopped
 
     # Alert Service (add when ready)
     # alert-service:
