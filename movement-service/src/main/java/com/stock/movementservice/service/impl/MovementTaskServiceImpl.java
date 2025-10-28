@@ -1,4 +1,4 @@
-package com.stock.movementservice.service;
+package com.stock.movementservice.service.impl;
 
 import com.stock.movementservice.dto.mapper.MovementTaskMapper;
 import com.stock.movementservice.dto.request.MovementTaskRequestDto;
@@ -14,6 +14,8 @@ import com.stock.movementservice.exception.MovementNotFoundException;
 import com.stock.movementservice.exception.MovementTaskNotFoundException;
 import com.stock.movementservice.repository.MovementRepository;
 import com.stock.movementservice.repository.MovementTaskRepository;
+import com.stock.movementservice.service.EventPublisherService;
+import com.stock.movementservice.service.MovementTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
