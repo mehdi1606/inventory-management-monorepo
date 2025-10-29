@@ -16,12 +16,11 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // Auth Service
+                // Auth Service - NO JWT FILTER (handles its own security)
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
                         .filters(f -> f
-                                        .rewritePath("/api/auth/(?<segment>.*)", "/${segment}")
-                                // ✅ NO JWT FILTER - Auth handles its own security
+                                .rewritePath("/api/auth/(?<segment>.*)", "/${segment}")
                         )
                         .uri("http://localhost:8083"))
 

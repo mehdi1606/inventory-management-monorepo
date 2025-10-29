@@ -176,7 +176,7 @@ public class GlobalExceptionHandler {
         ValidationErrorResponse errorResponse = new ValidationErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation failed",
-                request.getDescription(false),µµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµµ
+                request.getDescription(false),
                 LocalDateTime.now(),
                 errors
         );

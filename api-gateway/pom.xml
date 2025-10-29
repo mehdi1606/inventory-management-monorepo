@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version> <!-- KEEP THIS -->
+        <version>3.4.1</version>
         <relativePath/>
     </parent>
 
     <properties>
         <java.version>17</java.version>
-        <spring-cloud.version>2024.0.0</spring-cloud.version> <!-- CHANGE THIS -->
+        <spring-cloud.version>2024.0.0</spring-cloud.version>
     </properties>
     <groupId>com.stock</groupId>
     <artifactId>api-gateway</artifactId>
@@ -81,6 +81,16 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <!-- Caffeine Cache - Recommended for LoadBalancer caching in production -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
 
         <!-- Test -->
