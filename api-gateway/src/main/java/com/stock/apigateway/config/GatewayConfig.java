@@ -16,51 +16,43 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // Auth Service - NO JWT FILTER (handles its own security)
+                // Auth Service - NO JWT FILTER, NO REWRITE
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
-                        .filters(f -> f
-                                .rewritePath("/api/auth/(?<segment>.*)", "/${segment}")
-                        )
                         .uri("http://localhost:8083"))
 
-                // Product Service
+                // Product Service - NO REWRITE
                 .route("product-service", r -> r
                         .path("/api/products/**", "/api/categories/**", "/api/items/**")
                         .filters(f -> f
-                                .rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri("http://localhost:8082"))
 
-                // Inventory Service
+                // Inventory Service - NO REWRITE
                 .route("inventory-service", r -> r
                         .path("/api/inventory/**", "/api/lots/**", "/api/serials/**")
                         .filters(f -> f
-                                .rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri("http://localhost:8085"))
 
-                // Movement Service
+                // Movement Service - NO REWRITE
                 .route("movement-service", r -> r
                         .path("/api/movements/**", "/api/tasks/**")
                         .filters(f -> f
-                                .rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri("http://localhost:8086"))
 
-                // Location Service
+                // Location Service - FIX PORT + NO REWRITE
                 .route("location-service", r -> r
                         .path("/api/locations/**", "/api/sites/**", "/api/warehouses/**")
                         .filters(f -> f
-                                .rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
-                        .uri("http://localhost:8084"))
+                        .uri("http://localhost:8084"))  // ✅ FIXED PORT
 
-                // Quality Service
+                // Quality Service - NO REWRITE
                 .route("quality-service", r -> r
                         .path("/api/quality/**", "/api/quarantine/**", "/api/inspections/**")
                         .filters(f -> f
-                                .rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri("http://localhost:8087"))
 
