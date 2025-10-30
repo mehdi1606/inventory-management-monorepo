@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/movements")
+@RequestMapping("/api/movements")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Movement Management", description = "APIs for managing stock movements")

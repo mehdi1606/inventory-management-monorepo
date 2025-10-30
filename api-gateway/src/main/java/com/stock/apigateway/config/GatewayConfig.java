@@ -30,24 +30,24 @@ public class GatewayConfig {
 
                 // Inventory Service - NO REWRITE
                 .route("inventory-service", r -> r
-                        .path("/api/inventory/**", "/api/lots/**", "/api/serials/**")
-                        .filters(f -> f
-                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
-                        .uri("http://localhost:8085"))
-
-                // Movement Service - NO REWRITE
-                .route("movement-service", r -> r
-                        .path("/api/movements/**", "/api/tasks/**")
+                        .path("/api/inventory/**", "/api/lots/**","/api/serials/**", "/api/v1/admin/cache/items/**")
                         .filters(f -> f
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri("http://localhost:8086"))
+
+                // Movement Service - NO REWRITE
+                .route("movement-service", r -> r
+                        .path("/api/movement-tasks/**", "/api/movement-lines/**","/api/movements/**")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
+                        .uri("http://localhost:8084"))
 
                 // Location Service - FIX PORT + NO REWRITE
                 .route("location-service", r -> r
                         .path("/api/locations/**", "/api/sites/**", "/api/warehouses/**")
                         .filters(f -> f
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
-                        .uri("http://localhost:8084"))  // ✅ FIXED PORT
+                        .uri("http://localhost:8085"))
 
                 // Quality Service - NO REWRITE
                 .route("quality-service", r -> r

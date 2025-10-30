@@ -22,7 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/lots")
+@RequestMapping("/api/lots")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Lots", description = "Lot management endpoints for batch tracking")

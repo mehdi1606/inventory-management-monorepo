@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/serials")
+@RequestMapping("/api/serials")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Serials", description = "Serial number management endpoints for serialized item tracking")

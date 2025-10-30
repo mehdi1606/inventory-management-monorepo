@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/movement-tasks")
+@RequestMapping("/api/movement-tasks")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Movement Task Management", description = "APIs for managing movement tasks")

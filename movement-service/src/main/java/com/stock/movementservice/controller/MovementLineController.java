@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/movement-lines")
+@RequestMapping("/api/movement-lines")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Movement Line Management", description = "APIs for managing movement lines")
