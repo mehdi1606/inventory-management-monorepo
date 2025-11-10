@@ -30,7 +30,7 @@ public class GatewayConfig {
 
                 // Inventory Service - NO REWRITE
                 .route("inventory-service", r -> r
-                        .path("/api/inventory/**", "/api/lots/**","/api/serials/**", "/api/v1/admin/cache/items/**")
+                        .path("/api/inventory/**", "/api/lots/**","/api/serials/**", "/api/admin/cache/items/**")
                         .filters(f -> f
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config())))
                         .uri("http://localhost:8086"))
