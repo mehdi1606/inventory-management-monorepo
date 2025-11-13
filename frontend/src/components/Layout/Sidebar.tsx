@@ -15,28 +15,33 @@ import {
   Map,
   Building2,
   CheckCircle,
-  Bell,
   Menu,
   X,
 } from 'lucide-react';
-import { ROUTES } from '@/config/constants';
 import { cn } from '@/utils/cn';
 
 const navigation = [
-  { name: 'Dashboard', href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-  { name: 'Products Overview', href: ROUTES.PRODUCTS, icon: Package },
-  { name: 'Items', href: ROUTES.PRODUCTS_ITEMS, icon: Boxes },
-  { name: 'Item Variants', href: ROUTES.PRODUCTS_ITEM_VARIANTS, icon: Layers },
-  { name: 'Categories', href: ROUTES.CATEGORIES, icon: Tag },
-  { name: 'Inventory', href: ROUTES.INVENTORY, icon: Warehouse },
-  { name: 'Lots', href: ROUTES.INVENTORY_LOTS, icon: Box },
-  { name: 'Serials', href: ROUTES.INVENTORY_SERIALS, icon: Barcode },
-  { name: 'Movements', href: ROUTES.MOVEMENTS, icon: Move },
-  { name: 'Locations', href: ROUTES.LOCATIONS, icon: MapPin },
-  { name: 'Sites', href: ROUTES.LOCATIONS_SITES, icon: Map },
-  { name: 'Warehouses', href: ROUTES.LOCATIONS_WAREHOUSES, icon: Building2 },
-  { name: 'Quality', href: ROUTES.QUALITY, icon: CheckCircle },
-  { name: 'Alerts', href: ROUTES.ALERTS, icon: Bell },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  
+  // Products Section
+  { name: 'Items', href: '/products/items', icon: Boxes },
+  { name: 'Item Variants', href: '/products/variants', icon: Layers },
+  { name: 'Categories', href: '/products/categories', icon: Tag },
+  
+  // Inventory Section
+  { name: 'Lots', href: '/inventory/lots', icon: Box },
+  { name: 'Serials', href: '/inventory/serials', icon: Barcode },
+  
+  // Locations Section
+  { name: 'Sites', href: '/locations/sites', icon: Map },
+  { name: 'Warehouses', href: '/locations/warehouses', icon: Building2 },
+  { name: 'Locations', href: '/locations/locations', icon: MapPin },
+  
+  // Movements
+  { name: 'Movements', href: '/movements', icon: Move },
+  
+  // Quality
+  { name: 'Quality Control', href: '/quality', icon: CheckCircle },
 ];
 
 export const Sidebar = () => {
@@ -48,12 +53,12 @@ export const Sidebar = () => {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-neutral-800 rounded-xl shadow-3d-md"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-neutral-800 rounded-xl shadow-lg"
       >
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </motion.button>
 
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="hidden lg:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-md border-r border-neutral-200/50 dark:border-neutral-700/50 z-40 overflow-y-auto scrollbar-thin">
         <nav className="p-4 space-y-2">
           {navigation.map((item, index) => {
@@ -68,23 +73,23 @@ export const Sidebar = () => {
               >
                 <NavLink
                   to={item.href}
-                  className={({ isActive: active }) =>
+                  className={({ isActive }) =>
                     cn(
                       'group flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative',
-                      active
-                        ? 'bg-gradient-primary text-white shadow-3d-md'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:shadow-3d-sm'
+                      isActive
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:shadow-md'
                     )
                   }
                 >
-                  {({ isActive: active }) => (
+                  {({ isActive }) => (
                     <>
                       <Icon className={cn(
                         'w-5 h-5 transition-transform duration-300',
-                        active && 'scale-110'
+                        isActive && 'scale-110'
                       )} />
                       <span>{item.name}</span>
-                      {active && (
+                      {isActive && (
                         <motion.div
                           layoutId="activeIndicator"
                           className="absolute right-2 w-2 h-2 bg-white rounded-full"
@@ -103,71 +108,71 @@ export const Sidebar = () => {
       {/* Mobile Sidebar */}
       <AnimatePresence>
         {isOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="lg:hidden fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-md border-r border-neutral-200/50 dark:border-neutral-700/50 z-40 overflow-y-auto scrollbar-thin"
-            onClick={() => setIsOpen(false)}
-          >
-            <nav className="p-4 space-y-2">
-              {navigation.map((item, index) => {
-                const Icon = item.icon;
-                
-                return (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <NavLink
-                      to={item.href}
-                      className={({ isActive: active }) =>
-                        cn(
-                          'group flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300',
-                          active
-                            ? 'bg-gradient-primary text-white shadow-3d-md'
-                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:shadow-3d-sm'
-                        )
-                      }
+          <>
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="lg:hidden fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-md border-r border-neutral-200/50 dark:border-neutral-700/50 z-40 overflow-y-auto scrollbar-thin"
+            >
+              <nav className="p-4 space-y-2">
+                {navigation.map((item, index) => {
+                  const Icon = item.icon;
+                  
+                  return (
+                    <motion.div
+                      key={item.name}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
                     >
-                      {({ isActive: active }) => (
-                        <>
-                          <Icon className={cn(
-                            'w-5 h-5 transition-transform duration-300',
-                            active && 'scale-110'
-                          )} />
-                          <span>{item.name}</span>
-                          {active && (
-                            <motion.div
-                              layoutId="activeIndicator"
-                              className="absolute right-2 w-2 h-2 bg-white rounded-full"
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            />
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  </motion.div>
-                );
-              })}
-            </nav>
-          </motion.aside>
+                      <NavLink
+                        to={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={({ isActive }) =>
+                          cn(
+                            'group flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 relative',
+                            isActive
+                              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:shadow-md'
+                          )
+                        }
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <Icon className={cn(
+                              'w-5 h-5 transition-transform duration-300',
+                              isActive && 'scale-110'
+                            )} />
+                            <span>{item.name}</span>
+                            {isActive && (
+                              <motion.div
+                                layoutId="mobileActiveIndicator"
+                                className="absolute right-2 w-2 h-2 bg-white rounded-full"
+                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                              />
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                  );
+                })}
+              </nav>
+            </motion.aside>
+
+            {/* Overlay for mobile */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-30"
+            />
+          </>
         )}
       </AnimatePresence>
-
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setIsOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-30"
-        />
-      )}
     </>
   );
 };
