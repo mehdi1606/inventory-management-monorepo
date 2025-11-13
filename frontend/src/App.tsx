@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 
 // Layout Components
-import { Navbar } from '@/components/Layout/Sidebar';
+import { Sidebar } from '@/components/Layout/Sidebar';
 
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -49,7 +49,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Sidebar />
       <main className="pt-16">
         <div className="container mx-auto px-4 py-6">
           {children}

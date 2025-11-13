@@ -17,7 +17,7 @@ import {
   Zap,
   Users
 } from 'lucide-react';
-import { GradientButton } from '@/components/ui/Button';
+import { GradientButton } from '@/components/ui/GradientButton';
 import { ROUTES } from '@/config/constants';
 import toast from 'react-hot-toast';
 

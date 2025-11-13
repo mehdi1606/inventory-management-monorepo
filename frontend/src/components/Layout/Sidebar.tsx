@@ -3,11 +3,9 @@ import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
-  Package,
   Boxes,
   Layers,
   Tag,
-  Warehouse,
   Box,
   Barcode,
   Move,

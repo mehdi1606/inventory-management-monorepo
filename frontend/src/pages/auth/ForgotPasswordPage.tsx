@@ -10,7 +10,8 @@ import {
   Shield,
   Key
 } from 'lucide-react';
-import { GradientButton, Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
+import { GradientButton } from '@/components/ui/GradientButton';
 import { ROUTES } from '@/config/constants';
 
 export const ForgotPasswordPage = () => {
