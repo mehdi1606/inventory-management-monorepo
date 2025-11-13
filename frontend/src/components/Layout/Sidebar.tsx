@@ -1,12 +1,19 @@
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Package,
+  Boxes,
+  Layers,
+  Tag,
   Warehouse,
+  Box,
+  Barcode,
   Move,
   MapPin,
+  Map,
+  Building2,
   CheckCircle,
   Bell,
   Menu,
@@ -17,17 +24,23 @@ import { cn } from '@/utils/cn';
 
 const navigation = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-  { name: 'Products', href: ROUTES.PRODUCTS, icon: Package },
+  { name: 'Products Overview', href: ROUTES.PRODUCTS, icon: Package },
+  { name: 'Items', href: ROUTES.PRODUCTS_ITEMS, icon: Boxes },
+  { name: 'Item Variants', href: ROUTES.PRODUCTS_ITEM_VARIANTS, icon: Layers },
+  { name: 'Categories', href: ROUTES.CATEGORIES, icon: Tag },
   { name: 'Inventory', href: ROUTES.INVENTORY, icon: Warehouse },
+  { name: 'Lots', href: ROUTES.INVENTORY_LOTS, icon: Box },
+  { name: 'Serials', href: ROUTES.INVENTORY_SERIALS, icon: Barcode },
   { name: 'Movements', href: ROUTES.MOVEMENTS, icon: Move },
   { name: 'Locations', href: ROUTES.LOCATIONS, icon: MapPin },
+  { name: 'Sites', href: ROUTES.LOCATIONS_SITES, icon: Map },
+  { name: 'Warehouses', href: ROUTES.LOCATIONS_WAREHOUSES, icon: Building2 },
   { name: 'Quality', href: ROUTES.QUALITY, icon: CheckCircle },
   { name: 'Alerts', href: ROUTES.ALERTS, icon: Bell },
 ];
 
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
 
   return (
     <>
@@ -45,7 +58,6 @@ export const Sidebar = () => {
         <nav className="p-4 space-y-2">
           {navigation.map((item, index) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.href;
             
             return (
               <motion.div
@@ -102,7 +114,6 @@ export const Sidebar = () => {
             <nav className="p-4 space-y-2">
               {navigation.map((item, index) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.href;
                 
                 return (
                   <motion.div

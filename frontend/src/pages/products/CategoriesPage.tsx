@@ -1,0 +1,261 @@
+// src/pages/products/CategoriesPage.tsx
+
+import { useState, useEffect } from 'react';
+import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { productService } from '@/services/product.service';
+import { Category } from '@/types';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { CategoryFormModal } from '@/components/categories/CategoryFormModal';
+import { CategoryDetailModal } from '@/components/categories/CategoryDetailModal';
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
+import { toast } from 'react-hot-toast';
+
+export const CategoriesPage = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const data = await productService.getCategories();
+      setCategories(data);
+      setFilteredCategories(data);
+    } catch (error) {
+      toast.error('Failed to fetch categories');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Search filter
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = categories.filter((cat) =>
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cat.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredCategories(filtered);
+    } else {
+      setFilteredCategories(categories);
+    }
+  }, [searchTerm, categories]);
+
+  // Handlers
+  const handleCreate = () => {
+    setSelectedCategory(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleEdit = (category: Category) => {
+    setSelectedCategory(category);
+    setIsEditModalOpen(true);
+  };
+
+  const handleView = (category: Category) => {
+    setSelectedCategory(category);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleDelete = (category: Category) => {
+    setSelectedCategory(category);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedCategory) return;
+
+    try {
+      await productService.deleteCategory(selectedCategory.id);
+      toast.success('Category deleted successfully');
+      fetchCategories();
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      toast.error('Failed to delete category');
+      console.error(error);
+    }
+  };
+
+  const handleFormSuccess = () => {
+    fetchCategories();
+    setIsCreateModalOpen(false);
+    setIsEditModalOpen(false);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
+          <p className="text-gray-600 mt-1">Manage product categories</p>
+        </div>
+        <Button onClick={handleCreate} className="flex items-center gap-2">
+          <Plus size={20} />
+          New Category
+        </Button>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Input
+                type="text"
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Parent Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCategories.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                      No categories found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCategories.map((category) => (
+                    <tr key={category.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-500">{category.description || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {category.parentCategoryId || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            category.isActive
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {category.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleView(category)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="View"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(category)}
+                            className="text-yellow-600 hover:text-yellow-900"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(category)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <CategoryFormModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleFormSuccess}
+        mode="create"
+      />
+
+      <CategoryFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleFormSuccess}
+        mode="edit"
+        category={selectedCategory}
+      />
+
+      <CategoryDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        category={selectedCategory}
+        onEdit={() => {
+          setIsDetailModalOpen(false);
+          setIsEditModalOpen(true);
+        }}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message={`Are you sure you want to delete "${selectedCategory?.name}"? This action cannot be undone.`}
+      />
+    </div>
+  );
+};

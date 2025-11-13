@@ -106,7 +106,13 @@ export const authService = {
     );
     return response.data;
   },
-
+  resendVerificationEmail: async (email: string): Promise<ApiResponse<void>> => {
+    const response = await apiClient.post<ApiResponse<void>>(
+      '/api/auth/resend-verification',
+      { email }
+    );
+    return response.data;
+  },
   getCurrentUser: (): User | null => {
     return storage.get<User>(STORAGE_KEYS.USER);
   },

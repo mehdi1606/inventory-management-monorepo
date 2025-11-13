@@ -1,13 +1,13 @@
-// src/components/ui/Input.tsx
+// src/components/ui/Textarea.tsx
 
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { TextareaHTMLAttributes, forwardRef } from 'react';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, className = '', ...props }, ref) => {
     return (
       <div className="w-full">
@@ -16,7 +16,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <input
+        <textarea
           ref={ref}
           className={`bg-gray-50 border ${
             error ? 'border-red-500' : 'border-gray-300'
@@ -29,4 +29,4 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = 'Input';
+Textarea.displayName = 'Textarea';

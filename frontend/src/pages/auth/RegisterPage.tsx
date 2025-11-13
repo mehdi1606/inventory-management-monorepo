@@ -68,8 +68,11 @@ export const RegisterPage = () => {
         lastName: formData.lastName,
       });
 
-      toast.success('Registration successful! Please login.');
-      navigate(ROUTES.LOGIN);
+      toast.success('Registration successful! Please verify your email.');
+      
+      // Redirect to verify email page instead of login
+      navigate(ROUTES.VERIFY_EMAIL);
+      
     } catch (error: any) {
       console.error('Registration error:', error);
       const message = error.response?.data?.message || 'Registration failed. Please try again.';

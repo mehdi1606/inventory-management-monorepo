@@ -3,9 +3,18 @@ package com.stock.authservice.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -13,99 +22,127 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final ResourceLoader resourceLoader;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    @Value("${app.base-url:http://localhost:8083}")
-    private String baseUrl;
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
+    /**
+     * Send HTML verification email using template
+     */
     public void sendVerificationEmail(String email, String token) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(email);
-            message.setSubject("Verify Your Email - Stock Management System");
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            String verificationUrl = baseUrl + "/api/auth/verify-email?token=" + token;
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Verify Your Email - Stock Management System");
 
-            String emailBody = String.format(
-                    "Welcome to Stock Management System!\n\n" +
-                            "Please click the link below to verify your email address:\n\n" +
-                            "%s\n\n" +
-                            "This link will expire in 24 hours.\n\n" +
-                            "If you didn't create an account, please ignore this email.\n\n" +
-                            "Best regards,\n" +
-                            "Stock Management Team",
-                    verificationUrl
-            );
+            // Build verification URL - points to frontend
+            String verificationUrl = frontendUrl + "/verify-email?token=" + token;
 
-            message.setText(emailBody);
+            // Load and populate template
+            String htmlContent = loadEmailTemplate("classpath:templates/email-verification.html");
+            htmlContent = htmlContent.replace("${verificationUrl}", verificationUrl);
+            htmlContent = htmlContent.replace("${email}", email);
+
+            helper.setText(htmlContent, true); // true = HTML content
+
             mailSender.send(message);
 
             log.info("Verification email sent successfully to: {}", email);
-        } catch (Exception e) {
+        } catch (MessagingException | IOException e) {
             log.error("Failed to send verification email to: {}", email, e);
             throw new RuntimeException("Failed to send verification email", e);
         }
     }
 
+    /**
+     * Send HTML welcome email using template
+     */
+    public void sendWelcomeEmail(String email, String username) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Welcome to Stock Management System! 🎉");
+
+            // Load and populate template
+            String htmlContent = loadEmailTemplate("classpath:templates/email-welcome.html");
+            htmlContent = htmlContent.replace("${username}", username);
+            htmlContent = htmlContent.replace("${email}", email);
+
+            helper.setText(htmlContent, true); // true = HTML content
+
+            mailSender.send(message);
+
+            log.info("Welcome email sent successfully to: {}", email);
+        } catch (MessagingException | IOException e) {
+            log.error("Failed to send welcome email to: {}", email, e);
+            throw new RuntimeException("Failed to send welcome email", e);
+        }
+    }
+
+    /**
+     * Send password reset email
+     */
     public void sendPasswordResetEmail(String email, String token) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(email);
-            message.setSubject("Password Reset Request - Stock Management System");
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            String resetUrl = baseUrl + "/api/auth/reset-password?token=" + token;
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Password Reset Request - Stock Management System");
 
-            String emailBody = String.format(
-                    "Hello,\n\n" +
-                            "We received a request to reset your password.\n\n" +
-                            "Please click the link below to reset your password:\n\n" +
-                            "%s\n\n" +
-                            "This link will expire in 1 hour.\n\n" +
-                            "If you didn't request a password reset, please ignore this email.\n\n" +
-                            "Best regards,\n" +
-                            "Stock Management Team",
-                    resetUrl
-            );
+            String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
-            message.setText(emailBody);
+            String htmlContent = String.format("""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                    </head>
+                    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #667eea;">Password Reset Request</h2>
+                        <p>Hello,</p>
+                        <p>We received a request to reset your password. Click the button below to reset it:</p>
+                        <p style="text-align: center; margin: 30px 0;">
+                            <a href="%s" style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+                        </p>
+                        <p>Or copy and paste this link into your browser:</p>
+                        <p style="background-color: #f4f4f4; padding: 10px; border-radius: 5px; word-break: break-all;">%s</p>
+                        <p><strong>This link will expire in 1 hour.</strong></p>
+                        <p>If you didn't request this password reset, please ignore this email or contact support if you have concerns.</p>
+                        <p>Best regards,<br>Stock Management Team</p>
+                    </body>
+                    </html>
+                    """, resetUrl, resetUrl);
+
+            helper.setText(htmlContent, true);
+
             mailSender.send(message);
 
             log.info("Password reset email sent successfully to: {}", email);
-        } catch (Exception e) {
+        } catch (MessagingException e) {
             log.error("Failed to send password reset email to: {}", email, e);
             throw new RuntimeException("Failed to send password reset email", e);
         }
     }
 
-    public void sendWelcomeEmail(String email, String username) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(email);
-            message.setSubject("Welcome to Stock Management System!");
-
-            String emailBody = String.format(
-                    "Hello %s,\n\n" +
-                            "Welcome to Stock Management System!\n\n" +
-                            "Your account has been successfully verified.\n\n" +
-                            "You can now log in and start managing your inventory.\n\n" +
-                            "If you have any questions, feel free to reach out to our support team.\n\n" +
-                            "Best regards,\n" +
-                            "Stock Management Team",
-                    username
-            );
-
-            message.setText(emailBody);
-            mailSender.send(message);
-
-            log.info("Welcome email sent successfully to: {}", email);
-        } catch (Exception e) {
-            log.error("Failed to send welcome email to: {}", email, e);
-            // Don't throw exception for welcome emails - it's not critical
+    /**
+     * Load email template from resources
+     */
+    private String loadEmailTemplate(String templatePath) throws IOException {
+        Resource resource = resourceLoader.getResource(templatePath);
+        try (InputStreamReader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
+            return FileCopyUtils.copyToString(reader);
         }
     }
 }
