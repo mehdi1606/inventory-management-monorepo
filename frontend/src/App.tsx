@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { STORAGE_KEYS } from '@/config/constants';
 
 // Layout Components
+import { Header } from '@/components/Layout/Header';
 import { Sidebar } from '@/components/Layout/Sidebar';
 
 // Auth Pages
@@ -34,9 +36,10 @@ import { MovementsPage } from '@/pages/movements/MovementsPage';
 // Quality Pages
 import { QualityControlsPage } from '@/pages/quality/QualityPage';
 
-// Protected Route Component
+// Protected Route Component - FIXED VERSION
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = localStorage.getItem('token');
+  // FIX: Check for 'access_token' instead of 'token'
+  const isAuthenticated = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -45,13 +48,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Layout Component (without Sidebar)
+// Main Layout Component with Header and Sidebar
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-neutral-50 dark:bg-neutral-900">
+      <Header />
       <Sidebar />
-      <main className="pt-16">
-        <div className="container mx-auto px-4 py-6">
+      <main className="flex-1 lg:ml-64 mt-16 p-4 lg:p-6">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
@@ -62,13 +66,12 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <Router>
-      {/* Toast Notifications */}
       <Toaster 
         position="top-right"
         toastOptions={{
           duration: 3000,
           style: {
-            background: '#363636',
+            background: '#333',
             color: '#fff',
           },
           success: {
@@ -87,26 +90,15 @@ function App() {
           },
         }}
       />
-
       <Routes>
-        {/* Public Routes (Auth Pages) */}
+        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
-        {/* Protected Routes with Layout */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <DashboardPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={

@@ -33,12 +33,17 @@ export const MovementsPage = () => {
   const fetchMovements = async () => {
     setLoading(true);
     try {
-      const data = await movementService.getMovements();
-      setMovements(data);
-      setFilteredMovements(data);
+      const response = await movementService.getMovements();
+      // Handle paginated response - extract the data array
+      const movementsData = Array.isArray(response) ? response : (response.data || []);
+      setMovements(movementsData);
+      setFilteredMovements(movementsData);
     } catch (error) {
       toast.error('Failed to fetch movements');
       console.error(error);
+      // Set empty arrays to prevent filter errors
+      setMovements([]);
+      setFilteredMovements([]);
     } finally {
       setLoading(false);
     }
@@ -50,7 +55,7 @@ export const MovementsPage = () => {
 
   // Apply filters
   useEffect(() => {
-    let filtered = movements;
+    let filtered = movements || []; // Add fallback to empty array
 
     // Search filter
     if (searchTerm) {
@@ -230,10 +235,6 @@ export const MovementsPage = () => {
             <option value="ADJUSTMENT">Adjustment</option>
             <option value="PICKING">Picking</option>
             <option value="PUTAWAY">Putaway</option>
-            <option value="RETURN">Return</option>
-            <option value="CYCLE_COUNT">Cycle Count</option>
-            <option value="QUARANTINE">Quarantine</option>
-            <option value="RELOCATION">Relocation</option>
           </Select>
           <Select
             value={filterStatus}
@@ -259,14 +260,14 @@ export const MovementsPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total</p>
+              <p className="text-sm text-gray-600">Total Movements</p>
               <p className="text-2xl font-bold text-gray-900">{movements.length}</p>
             </div>
-            <TruckIcon className="text-blue-500" size={32} />
+            <TruckIcon className="text-gray-400" size={32} />
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
@@ -277,7 +278,7 @@ export const MovementsPage = () => {
                 {movements.filter((m) => m.status === 'PENDING').length}
               </p>
             </div>
-            <PackageCheck className="text-yellow-500" size={32} />
+            <PackageCheck className="text-yellow-400" size={32} />
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
@@ -288,7 +289,7 @@ export const MovementsPage = () => {
                 {movements.filter((m) => m.status === 'IN_PROGRESS').length}
               </p>
             </div>
-            <Play className="text-blue-500" size={32} />
+            <Play className="text-blue-400" size={32} />
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
@@ -299,23 +300,12 @@ export const MovementsPage = () => {
                 {movements.filter((m) => m.status === 'COMPLETED').length}
               </p>
             </div>
-            <CheckCircle className="text-green-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Cancelled</p>
-              <p className="text-2xl font-bold text-red-600">
-                {movements.filter((m) => m.status === 'CANCELLED').length}
-              </p>
-            </div>
-            <XCircle className="text-red-500" size={32} />
+            <CheckCircle className="text-green-400" size={32} />
           </div>
         </div>
       </div>
 
-      {/* Data Table */}
+      {/* Movements Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -405,7 +395,7 @@ export const MovementsPage = () => {
                               : 'bg-green-100 text-green-800'
                           }`}
                         >
-                          {movement.priority || 'NORMAL'}
+                          {movement.priority}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -415,25 +405,17 @@ export const MovementsPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="text-sm text-gray-900">
-                            {movement.completedLines || 0}/{movement.totalLines || 0}
-                          </div>
-                          <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
                             <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{
-                                width: `${
-                                  movement.totalLines
-                                    ? ((movement.completedLines || 0) / movement.totalLines) * 100
-                                    : 0
-                                }%`,
-                              }}
+                              className="bg-blue-600 h-2.5 rounded-full"
+                              style={{ width: `${movement.completionPercentage || 0}%` }}
                             ></div>
                           </div>
+                          <span className="text-sm text-gray-600">{movement.completionPercentage || 0}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleView(movement)}
                             className="text-blue-600 hover:text-blue-900"
@@ -441,51 +423,47 @@ export const MovementsPage = () => {
                           >
                             <Eye size={18} />
                           </button>
-                          {(movement.status === 'DRAFT' || movement.status === 'PENDING') && (
+                          <button
+                            onClick={() => handleEdit(movement)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          {movement.status === 'DRAFT' && (
                             <button
                               onClick={() => handleStart(movement)}
-                              className="text-green-600 hover:text-green-900"
+                              className="text-blue-600 hover:text-blue-900"
                               title="Start"
                             >
                               <Play size={18} />
                             </button>
                           )}
                           {movement.status === 'IN_PROGRESS' && (
-                            <button
-                              onClick={() => handleComplete(movement)}
-                              className="text-green-600 hover:text-green-900"
-                              title="Complete"
-                            >
-                              <CheckCircle size={18} />
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleComplete(movement)}
+                                className="text-green-600 hover:text-green-900"
+                                title="Complete"
+                              >
+                                <CheckCircle size={18} />
+                              </button>
+                              <button
+                                onClick={() => handleCancel(movement)}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Cancel"
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            </>
                           )}
-                          {(movement.status === 'DRAFT' || movement.status === 'PENDING') && (
-                            <button
-                              onClick={() => handleEdit(movement)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Edit"
-                            >
-                              <Edit size={18} />
-                            </button>
-                          )}
-                          {movement.status !== 'COMPLETED' && (
-                            <button
-                              onClick={() => handleCancel(movement)}
-                              className="text-orange-600 hover:text-orange-900"
-                              title="Cancel"
-                            >
-                              <XCircle size={18} />
-                            </button>
-                          )}
-                          {(movement.status === 'DRAFT' || movement.status === 'CANCELLED') && (
-                            <button
-                              onClick={() => handleDelete(movement)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleDelete(movement)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -498,38 +476,40 @@ export const MovementsPage = () => {
       </div>
 
       {/* Modals */}
-      <MovementFormModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleFormSuccess}
-        mode="create"
-      />
+      {isCreateModalOpen && (
+        <MovementFormModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleFormSuccess}
+        />
+      )}
 
-      <MovementFormModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={handleFormSuccess}
-        mode="edit"
-        movement={selectedMovement}
-      />
+      {isEditModalOpen && selectedMovement && (
+        <MovementFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={handleFormSuccess}
+          movement={selectedMovement}
+        />
+      )}
 
-      <MovementDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        movement={selectedMovement}
-        onEdit={() => {
-          setIsDetailModalOpen(false);
-          setIsEditModalOpen(true);
-        }}
-      />
+      {isDetailModalOpen && selectedMovement && (
+        <MovementDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          movement={selectedMovement}
+        />
+      )}
 
-      <DeleteConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={confirmDelete}
-        title="Delete Movement"
-        message={`Are you sure you want to delete movement "${selectedMovement?.movementNumber}"? This action cannot be undone.`}
-      />
+      {isDeleteDialogOpen && selectedMovement && (
+        <DeleteConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={confirmDelete}
+          title="Delete Movement"
+          description={`Are you sure you want to delete movement ${selectedMovement.movementNumber || selectedMovement.referenceNumber}? This action cannot be undone.`}
+        />
+      )}
     </div>
   );
 };

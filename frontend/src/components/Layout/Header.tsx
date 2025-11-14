@@ -1,81 +1,341 @@
-import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/contexts/ThemeContext';
-import { LogOut, User, Moon, Sun, Bell } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { logout as logoutAction } from '@/store/slices/auth.slice';
+import { authService } from '@/services/auth.service';
+import {
+  LogOut,
+  User,
+  Settings,
+  Bell,
+  Search,
+  Menu,
+  ChevronDown,
+  Package,
+  Sparkles,
+  Moon,
+  Sun,
+} from 'lucide-react';
+import { ROUTES } from '@/config/constants';
+import toast from 'react-hot-toast';
 
-export const Header = () => {
-  const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
-  const [notifications] = useState(3); // Mock notification count
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const Header = ({ onMenuClick }: HeaderProps) => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Mock notifications
+  const notifications = [
+    { id: 1, title: 'Low Stock Alert', message: 'Item A is running low', time: '5m ago', unread: true },
+    { id: 2, title: 'New Order', message: 'Order #1234 received', time: '1h ago', unread: true },
+    { id: 3, title: 'System Update', message: 'System updated successfully', time: '2h ago', unread: false },
+  ];
+
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      dispatch(logoutAction());
+      toast.success('Logged out successfully');
+      navigate(ROUTES.LOGIN);
+    } catch (error) {
+      dispatch(logoutAction());
+      navigate(ROUTES.LOGIN);
+    }
+  };
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    toast.success(isDark ? 'Light mode activated' : 'Dark mode activated');
+  };
+
+  const getUserInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    }
+    if (user?.username) {
+      return user.username.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
 
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-md border-b border-neutral-200/50 dark:border-neutral-700/50 z-50 lg:ml-64 shadow-3d-sm"
+      transition={{ duration: 0.3, type: 'spring' }}
+      className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-700/50 z-50 shadow-lg"
     >
-      <div className="flex items-center justify-between h-full px-6">
+      <div className="flex items-center justify-between h-full px-4 lg:px-6 max-w-full">
+        {/* Left Section */}
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary-500 to-accent-teal bg-clip-text text-transparent">
-            Stock Management
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Notifications */}
+          {/* Mobile Menu Button */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="relative p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onMenuClick}
+            className="lg:hidden p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
-            <Bell className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-            {notifications > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"
-              />
-            )}
+            <Menu className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          </motion.button>
+
+          {/* Logo & Brand */}
+          <motion.div
+            className="flex items-center gap-3 cursor-pointer"
+            whileHover={{ scale: 1.02 }}
+            onClick={() => navigate(ROUTES.DASHBOARD)}
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 via-purple-500 to-accent-teal flex items-center justify-center shadow-lg shadow-primary-500/30">
+              <Package className="w-5 h-5 text-white" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary-600 via-purple-600 to-accent-teal bg-clip-text text-transparent">
+                StockFlow
+              </h1>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 -mt-1">Management System</p>
+            </div>
+          </motion.div>
+
+          {/* Search Bar - Desktop */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="hidden md:flex items-center gap-2 ml-8 bg-neutral-100 dark:bg-neutral-800 rounded-xl px-4 py-2 w-96"
+          >
+            <Search className="w-4 h-4 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search products, inventory..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none text-sm text-neutral-700 dark:text-neutral-300 placeholder-neutral-400 flex-1"
+            />
+            <kbd className="px-2 py-1 text-xs bg-neutral-200 dark:bg-neutral-700 rounded">⌘K</kbd>
+          </motion.div>
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-2 lg:gap-3">
+          {/* Quick Actions */}
+          <motion.button
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            whileTap={{ scale: 0.95 }}
+            className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary-500 to-purple-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl transition-all"
+            onClick={() => toast.success('Quick action feature coming soon!')}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Quick Add</span>
           </motion.button>
 
           {/* Theme Toggle */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.1, rotate: 180 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleTheme}
-            className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+            className="p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             {isDark ? (
-              <Sun className="w-5 h-5 text-warning" />
+              <Sun className="w-5 h-5 text-amber-500" />
             ) : (
-              <Moon className="w-5 h-5 text-neutral-600" />
+              <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
             )}
           </motion.button>
 
-          {/* User Info */}
-          <div className="flex items-center gap-3 pl-3 border-l border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm">
-                {user?.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
-                {user?.username || 'User'}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              icon={<LogOut className="w-4 h-4" />}
-              className="hidden sm:flex"
+          {/* Notifications */}
+          <div className="relative">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                setShowUserMenu(false);
+              }}
+              className="relative p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             >
-              Logout
-            </Button>
+              <Bell className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+              {unreadCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                >
+                  {unreadCount}
+                </motion.span>
+              )}
+            </motion.button>
+
+            {/* Notifications Dropdown */}
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden"
+                >
+                  <div className="p-4 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                    <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
+                      Notifications
+                    </h3>
+                    <span className="text-xs px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded-full">
+                      {unreadCount} new
+                    </span>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.map((notification) => (
+                      <motion.div
+                        key={notification.id}
+                        whileHover={{ backgroundColor: 'rgba(0,0,0,0.02)' }}
+                        className="p-4 border-b border-neutral-100 dark:border-neutral-700 cursor-pointer"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${notification.unread ? 'bg-blue-500' : 'bg-neutral-300'}`} />
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                              {notification.title}
+                            </p>
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-neutral-400 mt-2">
+                              {notification.time}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  <div className="p-3 text-center">
+                    <button className="text-sm text-primary-600 dark:text-primary-400 font-semibold hover:underline">
+                      View all notifications
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* User Menu */}
+          <div className="relative">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifications(false);
+              }}
+              className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-3 pr-2 py-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
+            >
+              <div className="hidden lg:flex flex-col items-end">
+                <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                  {user?.firstName || user?.username || 'User'}
+                </span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {user?.email || 'user@example.com'}
+                </span>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                {getUserInitials()}
+              </div>
+              <ChevronDown className="w-4 h-4 text-neutral-500 hidden lg:block" />
+            </motion.button>
+
+            {/* User Dropdown */}
+            <AnimatePresence>
+              {showUserMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden"
+                >
+                  <div className="p-4 border-b border-neutral-200 dark:border-neutral-700 bg-gradient-to-br from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+                        {getUserInitials()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-neutral-800 dark:text-neutral-100">
+                          {user?.firstName && user?.lastName
+                            ? `${user.firstName} ${user.lastName}`
+                            : user?.username || 'User'}
+                        </p>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                          {user?.email || 'user@example.com'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2">
+                    <motion.button
+                      whileHover={{ x: 4 }}
+                      onClick={() => {
+                        navigate(ROUTES.PROFILE);
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 text-left transition-colors"
+                    >
+                      <User className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300">My Profile</span>
+                    </motion.button>
+
+                    <motion.button
+                      whileHover={{ x: 4 }}
+                      onClick={() => {
+                        navigate(ROUTES.SETTINGS);
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700 text-left transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300">Settings</span>
+                    </motion.button>
+                  </div>
+
+                  <div className="p-2 border-t border-neutral-200 dark:border-neutral-700">
+                    <motion.button
+                      whileHover={{ x: 4 }}
+                      onClick={() => {
+                        handleLogout();
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-left transition-colors group"
+                    >
+                      <LogOut className="w-4 h-4 text-neutral-600 dark:text-neutral-400 group-hover:text-red-600" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300 group-hover:text-red-600 font-semibold">
+                        Logout
+                      </span>
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
+
+      {/* Click outside to close dropdowns */}
+      {(showUserMenu || showNotifications) && (
+        <div
+          className="fixed inset-0 z-[-1]"
+          onClick={() => {
+            setShowUserMenu(false);
+            setShowNotifications(false);
+          }}
+        />
+      )}
     </motion.header>
   );
 };
