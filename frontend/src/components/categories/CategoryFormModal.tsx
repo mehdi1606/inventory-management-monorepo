@@ -1,14 +1,16 @@
 // src/components/categories/CategoryFormModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { productService } from '@/services/product.service';
+import { Category } from '@/types';
 import { toast } from 'react-hot-toast';
 
 interface CategoryFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: any;
+  mode: 'create' | 'edit';
+  category?: Category | null;
 }
 
 interface AttributeSchema {
@@ -21,7 +23,8 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  initialData
+  mode,
+  category
 }) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -40,20 +43,27 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
-      if (initialData) {
+      
+      if (mode === 'edit' && category) {
+        // EDIT MODE - Populate form with category data
         setFormData({
-          name: initialData.name || '',
-          description: initialData.description || '',
-          parentCategoryId: initialData.parentCategoryId || '',
-          displayOrder: initialData.displayOrder || 0,
+          name: category.name || '',
+          description: category.description || '',
+          parentCategoryId: category.parentCategoryId || '',
+          displayOrder: category.displayOrder || 0,
         });
 
         // Parse existing attribute schemas
         try {
-          if (initialData.attributeSchemas) {
-            const parsed = JSON.parse(initialData.attributeSchemas);
+          if (category.attributeSchemas) {
+            const parsed = typeof category.attributeSchemas === 'string'
+              ? JSON.parse(category.attributeSchemas)
+              : category.attributeSchemas;
+            
             if (parsed.attributeSchemas && Array.isArray(parsed.attributeSchemas)) {
               setAttributeSchemas(parsed.attributeSchemas);
+            } else {
+              setAttributeSchemas([]);
             }
           } else {
             setAttributeSchemas([]);
@@ -63,7 +73,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           setAttributeSchemas([]);
         }
       } else {
-        // Reset form for create
+        // CREATE MODE - Reset form
         setFormData({
           name: '',
           description: '',
@@ -73,18 +83,22 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
         setAttributeSchemas([]);
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, mode, category]);
 
   const fetchCategories = async () => {
     try {
       const response = await productService.getCategories();
-      const data = Array.isArray(response) ? response : response.content || [];
-      const filtered = initialData 
-        ? data.filter((cat: any) => cat.id !== initialData.id)
+      const data = Array.isArray(response) ? response : response?.content || [];
+      
+      // Filter out current category when editing to prevent self-reference
+      const filtered = mode === 'edit' && category 
+        ? data.filter((cat: any) => cat.id !== category.id)
         : data;
+      
       setCategories(filtered);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
+      setCategories([]);
     }
   };
 
@@ -126,8 +140,8 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
         attributeSchemas: attributeSchemasJson
       };
 
-      if (initialData) {
-        await productService.updateCategory(initialData.id, requestData);
+      if (mode === 'edit' && category) {
+        await productService.updateCategory(category.id, requestData);
         toast.success('Category updated successfully');
       } else {
         await productService.createCategory(requestData);
@@ -152,7 +166,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
-            {initialData ? 'Edit Category' : 'Create Category'}
+            {mode === 'edit' ? 'Edit Category' : 'Create Category'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
@@ -339,7 +353,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? 'Saving...' : (initialData ? 'Update' : 'Create')}
+              {loading ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Create')}
             </button>
           </div>
         </form>

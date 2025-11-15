@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { productService } from '@/services/product.service';
+import { ItemVariant } from '@/types';
 import { toast } from 'react-hot-toast';
 
 interface ItemVariantFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: any;
+  mode: 'create' | 'edit';
+  variant?: ItemVariant | null;
 }
 
 interface AttributeItem {
@@ -20,7 +22,8 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  initialData
+  mode,
+  variant
 }) => {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<any[]>([]);
@@ -38,16 +41,21 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchItems();
-      if (initialData) {
+      
+      if (mode === 'edit' && variant) {
+        // EDIT MODE - Populate form with variant data
         setFormData({
-          parentItemId: initialData.parentItemId || '',
-          sku: initialData.sku || '',
+          parentItemId: variant.parentItemId || '',
+          sku: variant.sku || '',
         });
 
         // Parse existing variant attributes
         try {
-          if (initialData.variantAttributes) {
-            const parsed = JSON.parse(initialData.variantAttributes);
+          if (variant.attributes) {
+            const parsed = typeof variant.attributes === 'string'
+              ? JSON.parse(variant.attributes)
+              : variant.attributes;
+            
             const attrsArray = Object.entries(parsed).map(([key, value]) => ({
               key,
               value: String(value)
@@ -61,7 +69,7 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
           setVariantAttributes([]);
         }
       } else {
-        // Reset form for create
+        // CREATE MODE - Reset form
         setFormData({
           parentItemId: '',
           sku: '',
@@ -70,21 +78,22 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
         setSelectedItem(null);
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, mode, variant]);
 
   const fetchItems = async () => {
     try {
       const response = await productService.getItems();
-      const data = Array.isArray(response) ? response : response.content || [];
+      const data = Array.isArray(response) ? response : response?.content || [];
       setItems(data);
       
       // If editing, find and set the selected item
-      if (initialData?.parentItemId) {
-        const item = data.find((i: any) => i.id === initialData.parentItemId);
+      if (mode === 'edit' && variant?.parentItemId) {
+        const item = data.find((i: any) => i.id === variant.parentItemId);
         setSelectedItem(item);
       }
     } catch (error) {
       console.error('Failed to fetch items:', error);
+      setItems([]);
     }
   };
 
@@ -97,7 +106,10 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
     // Auto-populate variant attributes from parent item if available
     if (item && item.attributes && variantAttributes.length === 0) {
       try {
-        const parsed = JSON.parse(item.attributes);
+        const parsed = typeof item.attributes === 'string'
+          ? JSON.parse(item.attributes)
+          : item.attributes;
+        
         const attrsArray = Object.entries(parsed).map(([key, value]) => ({
           key,
           value: String(value)
@@ -149,8 +161,8 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
         variantAttributes: variantAttributesJson
       };
 
-      if (initialData) {
-        await productService.updateItemVariant(initialData.id, requestData);
+      if (mode === 'edit' && variant) {
+        await productService.updateItemVariant(variant.id, requestData);
         toast.success('Item variant updated successfully');
       } else {
         await productService.createItemVariant(requestData);
@@ -175,7 +187,7 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
-            {initialData ? 'Edit Item Variant' : 'Create Item Variant'}
+            {mode === 'edit' ? 'Edit Item Variant' : 'Create Item Variant'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
@@ -218,7 +230,9 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
                   <div>
                     <span className="font-medium">Attributes:</span>
                     <pre className="text-xs mt-1 bg-blue-100 p-2 rounded overflow-x-auto">
-                      {selectedItem.attributes}
+                      {typeof selectedItem.attributes === 'string' 
+                        ? selectedItem.attributes 
+                        : JSON.stringify(selectedItem.attributes, null, 2)}
                     </pre>
                   </div>
                 )}
@@ -239,10 +253,10 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
               required
               maxLength={50}
               placeholder="e.g., ITEM-001-VAR-001"
-              disabled={!!initialData}
+              disabled={mode === 'edit'}
             />
             <p className="text-sm text-gray-500 mt-1">
-              Unique identifier for this variant (cannot be changed after creation)
+              Unique identifier for this variant {mode === 'edit' && '(cannot be changed after creation)'}
             </p>
           </div>
 
@@ -394,7 +408,7 @@ export const ItemVariantFormModal: React.FC<ItemVariantFormModalProps> = ({
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? 'Saving...' : (initialData ? 'Update' : 'Create')}
+              {loading ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Create')}
             </button>
           </div>
         </form>

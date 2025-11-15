@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
 import { productService } from '@/services/product.service';
+import { Item } from '@/types';
 import { toast } from 'react-hot-toast';
 
 interface ItemFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: any;
+  mode: 'create' | 'edit';
+  item?: Item | null;
 }
 
 interface CategoryAttributeSchema {
@@ -28,7 +30,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  initialData
+  mode,
+  item
 }) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -57,26 +60,31 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
-      if (initialData) {
+      
+      if (mode === 'edit' && item) {
+        // EDIT MODE - Populate form with item data
         setFormData({
-          categoryId: initialData.categoryId || '',
-          sku: initialData.sku || '',
-          name: initialData.name || '',
-          description: initialData.description || '',
-          tags: initialData.tags || '',
-          isSerialized: initialData.isSerialized || false,
-          isLotManaged: initialData.isLotManaged || false,
-          shelfLifeDays: initialData.shelfLifeDays || 0,
-          hazardousMaterial: initialData.hazardousMaterial || false,
+          categoryId: item.categoryId || '',
+          sku: item.sku || '',
+          name: item.name || '',
+          description: item.description || '',
+          tags: item.tags || '',
+          isSerialized: item.isSerialized || false,
+          isLotManaged: item.isLotManaged || false,
+          shelfLifeDays: item.shelfLifeDays || 0,
+          hazardousMaterial: item.hazardousMaterial || false,
         });
 
         // Parse existing attributes
         try {
-          if (initialData.attributes) {
-            const parsed = JSON.parse(initialData.attributes);
+          if (item.attributes) {
+            const parsed = typeof item.attributes === 'string' 
+              ? JSON.parse(item.attributes) 
+              : item.attributes;
+            
             // Will be populated after category is loaded
-            if (initialData.categoryId) {
-              loadCategoryAndAttributes(initialData.categoryId, parsed);
+            if (item.categoryId) {
+              loadCategoryAndAttributes(item.categoryId, parsed);
             }
           }
         } catch (error) {
@@ -85,8 +93,11 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
 
         // Parse temperature controls
         try {
-          if (initialData.temperatureControl) {
-            const parsed = JSON.parse(initialData.temperatureControl);
+          if (item.temperatureControl) {
+            const parsed = typeof item.temperatureControl === 'string'
+              ? JSON.parse(item.temperatureControl)
+              : item.temperatureControl;
+            
             if (Array.isArray(parsed)) {
               setTemperatureControls(parsed);
             }
@@ -96,15 +107,15 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
         }
 
         // Set image preview
-        if (initialData.imageUrl) {
-          setImagePreview(initialData.imageUrl);
+        if (item.imageUrl) {
+          setImagePreview(item.imageUrl);
         }
       } else {
-        // Reset form for create
+        // CREATE MODE - Reset form
         resetForm();
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, mode, item]);
 
   const resetForm = () => {
     setFormData({
@@ -127,10 +138,11 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
   const fetchCategories = async () => {
     try {
       const response = await productService.getCategories();
-      const data = Array.isArray(response) ? response : response.content || [];
+      const data = Array.isArray(response) ? response : response?.content || [];
       setCategories(data);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
+      setCategories([]);
     }
   };
 
@@ -142,7 +154,10 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
       // Parse attribute schemas from category
       if (category.attributeSchemas) {
         try {
-          const schemas = JSON.parse(category.attributeSchemas);
+          const schemas = typeof category.attributeSchemas === 'string'
+            ? JSON.parse(category.attributeSchemas)
+            : category.attributeSchemas;
+          
           if (schemas.attributeSchemas && Array.isArray(schemas.attributeSchemas)) {
             const attrs: DynamicAttribute[] = schemas.attributeSchemas.map((schema: CategoryAttributeSchema) => ({
               name: schema.name,
@@ -281,8 +296,8 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
         temperatureControl: temperatureControlJson
       };
 
-      if (initialData) {
-        await productService.updateItem(initialData.id, requestData);
+      if (mode === 'edit' && item) {
+        await productService.updateItem(item.id, requestData);
         toast.success('Item updated successfully');
       } else {
         await productService.createItem(requestData);
@@ -307,7 +322,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
-            {initialData ? 'Edit Item' : 'Create Item'}
+            {mode === 'edit' ? 'Edit Item' : 'Create Item'}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
@@ -351,7 +366,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
                     required
                     maxLength={50}
                     placeholder="e.g., ITEM-001"
-                    disabled={!!initialData}
+                    disabled={mode === 'edit'}
                   />
                 </div>
               </div>
@@ -633,7 +648,7 @@ export const ItemFormModal: React.FC<ItemFormModalProps> = ({
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? 'Saving...' : (initialData ? 'Update' : 'Create')}
+              {loading ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Create')}
             </button>
           </div>
         </form>
