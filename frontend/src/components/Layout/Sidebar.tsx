@@ -29,7 +29,7 @@ const navigation = [
   // Inventory Section
   { name: 'Lots', href: '/inventory/lots', icon: Box },
   { name: 'Serials', href: '/inventory/serials', icon: Barcode },
-  
+  { name: 'Inventory', href: '/inventory/Inventories', icon: Boxes },
   // Locations Section
   { name: 'Sites', href: '/locations/sites', icon: Map },
   { name: 'Warehouses', href: '/locations/warehouses', icon: Building2 },

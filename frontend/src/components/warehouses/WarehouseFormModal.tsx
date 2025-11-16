@@ -33,11 +33,11 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
     code: ''
   });
   
+  // Easy settings - array of key-value pairs
   const [settings, setSettings] = useState<SettingItem[]>([]);
   const [sites, setSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingSites, setLoadingSites] = useState(false);
-  const [selectedSite, setSelectedSite] = useState<any>(null);
 
   // Fetch sites for dropdown
   useEffect(() => {
@@ -84,12 +84,6 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
       } else {
         setSettings([]);
       }
-
-      // Load the site info for edit mode
-      if (warehouse.siteId && sites.length > 0) {
-        const site = sites.find(s => s.id === warehouse.siteId);
-        setSelectedSite(site);
-      }
     } else {
       setFormData({
         siteId: '',
@@ -97,54 +91,20 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
         code: ''
       });
       setSettings([]);
-      setSelectedSite(null);
     }
-  }, [mode, warehouse, isOpen, sites]);
+  }, [mode, warehouse, isOpen]);
 
-  // When site is selected, load its settings KEYS with EMPTY values
-  const handleSiteChange = async (siteId: string) => {
-    setFormData({ ...formData, siteId });
-    
-    if (!siteId) {
-      setSettings([]);
-      setSelectedSite(null);
-      return;
-    }
-
-    // Find selected site from sites array
-    const site = sites.find(s => s.id === siteId);
-    setSelectedSite(site);
-
-    // If site has settings, get KEYS from site, VALUES are empty for warehouse to fill
-    if (site && site.settings) {
-      try {
-        const parsedSettings = JSON.parse(site.settings);
-        // Extract ONLY the keys from site settings
-        const settingsArray = Object.keys(parsedSettings).map(key => ({
-          key: key,      // Key from site (FIXED - cannot change)
-          value: ''      // Empty value for warehouse to fill
-        }));
-        setSettings(settingsArray);
-      } catch (e) {
-        console.error('Failed to parse site settings:', e);
-        setSettings([]);
-      }
-    } else {
-      setSettings([]);
-    }
-  };
-
-  // Add new setting row (only in edit mode or if needed)
+  // Add new setting row
   const handleAddSetting = () => {
     setSettings([...settings, { key: '', value: '' }]);
   };
 
-  // Remove setting row (only custom added settings can be removed)
+  // Remove setting row
   const handleRemoveSetting = (index: number) => {
     setSettings(settings.filter((_, i) => i !== index));
   };
 
-  // Update setting VALUE only (key is fixed from site)
+  // Update setting key or value
   const handleSettingChange = (index: number, field: 'key' | 'value', value: string) => {
     const newSettings = [...settings];
     newSettings[index][field] = value;
@@ -196,11 +156,6 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Count how many settings come from site
-  const siteSettingsCount = selectedSite && selectedSite.settings 
-    ? Object.keys(JSON.parse(selectedSite.settings)).length 
-    : 0;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -224,9 +179,9 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
             </label>
             <Select
               value={formData.siteId}
-              onChange={(e) => handleSiteChange(e.target.value)}
+              onChange={(e) => setFormData({ ...formData, siteId: e.target.value })}
               required
-              disabled={loadingSites || mode === 'edit'}
+              disabled={loadingSites}
             >
               <option value="">
                 {loadingSites ? 'Loading sites...' : 'Select a site'}
@@ -237,9 +192,6 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
                 </option>
               ))}
             </Select>
-            {mode === 'edit' && (
-              <p className="text-xs text-gray-500 mt-1">Site cannot be changed in edit mode</p>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -273,16 +225,11 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
             </div>
           </div>
 
-          {/* Settings - Keys from Site, Values to Fill */}
+          {/* Settings - Easy Key-Value Editor */}
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-medium">
-                Settings 
-                {siteSettingsCount > 0 && (
-                  <span className="text-blue-600 text-xs ml-2">
-                    ({siteSettingsCount} attributes from site)
-                  </span>
-                )}
+                Settings (Optional)
               </label>
               <Button
                 type="button"
@@ -292,63 +239,46 @@ export const WarehouseFormModal: React.FC<WarehouseFormModalProps> = ({
                 className="flex items-center gap-1"
               >
                 <Plus size={16} />
-                Add Custom Setting
+                Add Setting
               </Button>
             </div>
             
             {settings.length === 0 ? (
               <div className="border rounded p-4 text-center text-gray-500 text-sm">
-                {formData.siteId 
-                  ? 'No settings defined in the selected site. Click "Add Custom Setting" to add configuration.'
-                  : 'Select a site first to load its setting attributes.'}
+                No settings added. Click "Add Setting" to add configuration options like capacity, manager, contact info, etc.
               </div>
             ) : (
               <div className="border rounded p-3 space-y-2">
-                {siteSettingsCount > 0 && (
-                  <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded mb-2">
-                    ℹ️ Attribute names come from the site. Fill in the values for this warehouse.
+                {settings.map((setting, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <Input
+                      type="text"
+                      placeholder="Key (e.g., capacity, manager)"
+                      value={setting.key}
+                      onChange={(e) => handleSettingChange(index, 'key', e.target.value)}
+                      className="flex-1"
+                    />
+                    <span className="text-gray-400">:</span>
+                    <Input
+                      type="text"
+                      placeholder="Value (e.g., 10000, John Doe)"
+                      value={setting.value}
+                      onChange={(e) => handleSettingChange(index, 'value', e.target.value)}
+                      className="flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSetting(index)}
+                      className="text-red-600 hover:text-red-800 p-2"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
-                )}
-                {settings.map((setting, index) => {
-                  const isFromSite = index < siteSettingsCount;
-                  return (
-                    <div key={index} className="flex gap-2 items-center">
-                      <div className="flex-1">
-                        <Input
-                          type="text"
-                          placeholder="Attribute name"
-                          value={setting.key}
-                          onChange={(e) => handleSettingChange(index, 'key', e.target.value)}
-                          disabled={isFromSite}
-                          className={isFromSite ? 'bg-gray-100' : ''}
-                        />
-                        {isFromSite && (
-                          <p className="text-xs text-gray-500 mt-1">From site (fixed)</p>
-                        )}
-                      </div>
-                      <span className="text-gray-400">=</span>
-                      <Input
-                        type="text"
-                        placeholder="Enter value"
-                        value={setting.value}
-                        onChange={(e) => handleSettingChange(index, 'value', e.target.value)}
-                        className="flex-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSetting(index)}
-                        className="text-red-600 hover:text-red-800 p-2"
-                        disabled={isFromSite}
-                      >
-                        <Trash2 size={18} className={isFromSite ? 'opacity-30' : ''} />
-                      </button>
-                    </div>
-                  );
-                })}
+                ))}
               </div>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Fill in values for the attributes defined in the site
+              Common settings: capacity, manager, phone, email, operating_hours, etc.
             </p>
           </div>
 

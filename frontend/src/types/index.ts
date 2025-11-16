@@ -157,53 +157,190 @@ export interface Inventory {
   lastUpdated: string;
 }
 
-// Movement Types
+// Movement Types (matching backend DTOs)
+export enum MovementType {
+  RECEIPT = 'RECEIPT',
+  ISSUE = 'ISSUE',
+  TRANSFER = 'TRANSFER',
+  ADJUSTMENT = 'ADJUSTMENT',
+  PICKING = 'PICKING',
+  PUTAWAY = 'PUTAWAY',
+  RETURN = 'RETURN',
+  CYCLE_COUNT = 'CYCLE_COUNT',
+  QUARANTINE = 'QUARANTINE',
+  RELOCATION = 'RELOCATION'
+}
+
+export enum MovementStatus {
+  DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  ON_HOLD = 'ON_HOLD',
+  PARTIALLY_COMPLETED = 'PARTIALLY_COMPLETED'
+}
+
+export enum MovementPriority {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+  CRITICAL = 'CRITICAL'
+}
+
+export enum LineStatus {
+  PENDING = 'PENDING',
+  ALLOCATED = 'ALLOCATED',
+  PICKED = 'PICKED',
+  PACKED = 'PACKED',
+  IN_TRANSIT = 'IN_TRANSIT',
+  RECEIVED = 'RECEIVED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  SHORT_PICKED = 'SHORT_PICKED'
+}
+
+export enum TaskType {
+  PICK = 'PICK',
+  PACK = 'PACK',
+  PUT_AWAY = 'PUT_AWAY',
+  COUNT = 'COUNT',
+  INSPECT = 'INSPECT',
+  LOAD = 'LOAD',
+  UNLOAD = 'UNLOAD',
+  STAGE = 'STAGE',
+  REPLENISH = 'REPLENISH'
+}
+
+export enum TaskStatus {
+  PENDING = 'PENDING',
+  ASSIGNED = 'ASSIGNED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  FAILED = 'FAILED'
+}
+
 export interface Movement {
   id: string;
-  movementNumber: string;
-  type: string;
-  status: string;
-  fromLocationId?: string;
-  fromLocation?: Location;
-  toLocationId: string;
-  toLocation?: Location;
-  requestedBy: string;
-  requestedDate: string;
-  completedDate?: string;
+  type: MovementType;
+  movementDate: string;
+  status: MovementStatus;
+  priority: MovementPriority;
+  expectedDate?: string;
+  actualDate?: string;
+  scheduledDate?: string;
+  sourceLocationId?: string;
+  destinationLocationId?: string;
+  sourceUserId?: string;
+  destinationUserId?: string;
+  warehouseId: string;
+  referenceNumber?: string;
   notes?: string;
-  lines: MovementLine[];
+  reason?: string;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
+  completedBy?: string;
+  completedAt?: string;
+  lines: MovementLine[];
+  tasks?: MovementTask[];
+  totalLines?: number;
+  completedLines?: number;
+  pendingTasks?: number;
 }
 
 export interface MovementLine {
   id: string;
   movementId: string;
-  movement?: Movement;
   itemId: string;
   item?: Item;
-  quantity: number;
+  requestedQuantity: number;
+  actualQuantity?: number;
+  uom?: string;
   lotId?: string;
   lot?: Lot;
   serialId?: string;
   serial?: Serial;
-  status: string;
+  fromLocationId?: string;
+  toLocationId?: string;
+  status: LineStatus;
+  lineNumber: number;
+  notes?: string;
+  reason?: string;
   createdAt: string;
   updatedAt: string;
+  varianceQuantity?: number;
 }
 
 export interface MovementTask {
   id: string;
   movementId: string;
-  movement?: Movement;
-  taskType: string;
-  status: string;
-  assignedTo?: string;
-  dueDate?: string;
-  completedDate?: string;
+  movementLineId?: string;
+  assignedUserId?: string;
+  taskType: TaskType;
+  status: TaskStatus;
+  priority: number;
+  scheduledStartTime?: string;
+  actualStartTime?: string;
+  expectedCompletionTime?: string;
+  actualCompletionTime?: string;
+  locationId?: string;
+  instructions?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  durationMinutes?: number;
+  isOverdue?: boolean;
+}
+
+// Request DTOs
+export interface MovementRequestDto {
+  type: MovementType;
+  movementDate?: string;
+  status?: MovementStatus;
+  priority?: MovementPriority;
+  expectedDate?: string;
+  scheduledDate?: string;
+  sourceLocationId?: string;
+  destinationLocationId?: string;
+  sourceUserId?: string;
+  destinationUserId?: string;
+  warehouseId: string;
+  referenceNumber?: string;
+  notes?: string;
+  reason?: string;
+  lines: MovementLineRequestDto[];
+  tasks?: MovementTaskRequestDto[];
+}
+
+export interface MovementLineRequestDto {
+  itemId: string;
+  requestedQuantity: number;
+  actualQuantity?: number;
+  uom?: string;
+  lotId?: string;
+  serialId?: string;
+  fromLocationId?: string;
+  toLocationId?: string;
+  status?: LineStatus;
+  lineNumber: number;
+  notes?: string;
+  reason?: string;
+}
+
+export interface MovementTaskRequestDto {
+  movementLineId?: string;
+  assignedUserId?: string;
+  taskType: TaskType;
+  status?: TaskStatus;
+  priority?: number;
+  scheduledStartTime?: string;
+  expectedCompletionTime?: string;
+  locationId?: string;
+  instructions?: string;
+  notes?: string;
 }
 
 // Location Types
@@ -358,7 +495,6 @@ export interface NotificationTemplate {
   createdAt: string;
   updatedAt: string;
 }
-
 
 
 

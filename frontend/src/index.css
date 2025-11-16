@@ -97,24 +97,34 @@
   /* Glassmorphism Card */
   .card-glass {
     @apply rounded-2xl shadow-glass backdrop-blur-xl;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    @apply border;
     transition: all 0.3s ease;
   }
 
-  .dark .card-glass {
-    background: rgba(33, 37, 41, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Light mode card-glass - for main app with light backgrounds */
+  html:not(.dark) .card-glass {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
   }
 
-  .card-glass:hover {
+  /* Dark mode card-glass - for auth pages with dark gradient backgrounds */
+  html.dark .card-glass {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Light mode card-glass hover */
+  html:not(.dark) .card-glass:hover {
     @apply shadow-glass-lg;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.95);
     transform: translateY(-4px);
   }
 
-  .dark .card-glass:hover {
-    background: rgba(33, 37, 41, 0.85);
+  /* Dark mode card-glass hover */
+  html.dark .card-glass:hover {
+    @apply shadow-glass-lg;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-4px);
   }
 
   /* Neumorphism Card */
@@ -250,28 +260,41 @@
     transform: translateY(-2px);
   }
 
+  /* Input Glass Base Styles */
   .input-glass {
     @apply w-full px-4 py-3 rounded-xl;
     @apply backdrop-blur-sm;
-    @apply border border-white/20 dark:border-neutral-700/50;
-    @apply shadow-3d-sm;
+    @apply border shadow-3d-sm;
     @apply transition-all duration-300;
     @apply focus:outline-none focus:ring-2 focus:ring-primary-400/50;
+  }
+
+  /* Light mode input-glass */
+  html:not(.dark) .input-glass {
     background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
-  .dark .input-glass {
+  /* Dark mode input-glass */
+  html.dark .input-glass {
     background: rgba(33, 37, 41, 0.5);
+    border-color: rgba(115, 115, 115, 0.5);
   }
 
-  .input-glass:focus {
-    @apply shadow-3d-md border-primary-400 dark:border-primary-600;
+  /* Light mode input-glass focus */
+  html:not(.dark) .input-glass:focus {
+    @apply shadow-3d-md;
     background: rgba(255, 255, 255, 0.8);
+    border-color: #475FAF;
     transform: translateY(-2px);
   }
 
-  .dark .input-glass:focus {
+  /* Dark mode input-glass focus */
+  html.dark .input-glass:focus {
+    @apply shadow-3d-md;
     background: rgba(33, 37, 41, 0.8);
+    border-color: #233272;
+    transform: translateY(-2px);
   }
 
   /* ==================== BADGE STYLES ==================== */
@@ -449,6 +472,23 @@
   .toast-info {
     @apply bg-primary-100/50 border-primary-500 dark:bg-primary-900/20;
   }
+
+  /* ==================== AUTH PAGE BACKGROUNDS ==================== */
+  
+  /* Auth page main background */
+  .auth-bg {
+    @apply min-h-screen relative overflow-hidden;
+  }
+
+  /* Light mode auth background */
+  html:not(.dark) .auth-bg {
+    background: linear-gradient(135deg, #E8EBF5 0%, #F8F9FA 50%, #E0F2F1 100%);
+  }
+
+  /* Dark mode auth background */
+  html.dark .auth-bg {
+    background: linear-gradient(135deg, #1A2554 0%, #090C18 50%, #004D40 100%);
+  }
 }
 
 @layer utilities {
@@ -456,6 +496,19 @@
   .text-gradient {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, #2C3E90 0%, #00BFA5 100%);
+  }
+
+  /* Auth Page Text Colors - adapts to theme */
+  .text-auth-primary {
+    @apply text-neutral-900 dark:text-white;
+  }
+
+  .text-auth-secondary {
+    @apply text-neutral-700 dark:text-neutral-300;
+  }
+
+  .text-auth-muted {
+    @apply text-neutral-500 dark:text-neutral-400;
   }
 
   /* Floating Animation */

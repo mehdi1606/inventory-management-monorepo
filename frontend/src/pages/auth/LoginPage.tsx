@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch } from '@/store/hooks';
@@ -31,11 +31,37 @@ export const LoginPage = () => {
     remember: false,
   });
 
+  // Load saved credentials when component mounts
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('rememberedUsername');
+    const savedPassword = localStorage.getItem('rememberedPassword');
+    const rememberMe = localStorage.getItem('rememberMe');
+
+    if (rememberMe === 'true' && savedUsername && savedPassword) {
+      setFormData({
+        usernameOrEmail: savedUsername,
+        password: savedPassword,
+        remember: true,
+      });
+    }
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
+      // Save or remove credentials based on "Remember Me" checkbox
+      if (formData.remember) {
+        localStorage.setItem('rememberedUsername', formData.usernameOrEmail);
+        localStorage.setItem('rememberedPassword', formData.password);
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('rememberedPassword');
+        localStorage.removeItem('rememberMe');
+      }
+
       // Call real backend API
       const response = await authService.login({
         usernameOrEmail: formData.usernameOrEmail,
@@ -89,123 +115,135 @@ export const LoginPage = () => {
     },
   ];
 
+  const stats = [
+    { label: 'Active Users', value: '10K+' },
+    { label: 'Products Managed', value: '500K+' },
+    { label: 'Daily Transactions', value: '50K+' },
+  ];
+
   return (
     <div className="relative min-h-screen flex overflow-hidden bg-neutral-900">
       {/* Animated Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-purple-900 to-accent-teal opacity-50">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii4wNSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9nPjwvc3ZnPg==')] opacity-20" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NjdlZWEiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAzLTRzMyAyIDMgNGMwIDItMiA0LTMgNHMtMy0yLTMtNHptLTEwIDhjMC0yIDItNCAzLTRzMyAyIDMgNGMwIDItMiA0LTMgNHMtMy0yLTMtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
       </div>
 
       {/* Floating Particles */}
-      {particles.map((particle) => (
-        <motion.div
-          key={particle.id}
-          className="absolute rounded-full bg-white/10 backdrop-blur-sm"
-          style={{
-            width: particle.size,
-            height: particle.size,
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            x: [0, 15, 0],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: particle.duration,
-            delay: particle.delay,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="absolute bg-white rounded-full"
+            style={{
+              width: particle.size,
+              height: particle.size,
+              left: `${particle.x}%`,
+              top: `${particle.y}%`,
+              opacity: 0.2,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              opacity: [0.2, 0.5, 0.2],
+            }}
+            transition={{
+              duration: particle.duration,
+              delay: particle.delay,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </div>
 
       {/* Left Side - Branding & Features */}
-      <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-center p-12 xl:p-20">
+      <div className="hidden lg:flex flex-1 relative z-10">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-xl"
+          className="flex flex-col justify-center px-12 xl:px-20 w-full"
         >
-          {/* Logo */}
-          <motion.div 
-            className="flex items-center gap-3 mb-12"
-            whileHover={{ scale: 1.05 }}
-          >
-            <div className="p-3 bg-gradient-to-br from-primary-400 to-accent-teal rounded-2xl shadow-3d-xl">
-              <Package className="w-10 h-10 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">StockFlow</h1>
-              <p className="text-sm text-neutral-300">Inventory Management</p>
-            </div>
-          </motion.div>
+          {/* Logo & Title */}
+          <div className="mb-12">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="inline-flex items-center gap-3 mb-6"
+            >
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-teal shadow-glow-accent">
+                <Package className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">StockFlow</h1>
+                <p className="text-accent-teal-light text-sm">Inventory Management System</p>
+              </div>
+            </motion.div>
 
-          {/* Main Headline */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-5xl xl:text-6xl font-bold text-white mb-6 leading-tight"
-          >
-            Manage Your<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-teal to-primary-400">
-              Inventory with Ease
-            </span>
-          </motion.h2>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-5xl font-bold text-white mb-4 leading-tight"
+            >
+              Streamline Your
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-teal to-primary-400">
+                Inventory Operations
+              </span>
+            </motion.h2>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-xl text-neutral-300 mb-12"
-          >
-            Streamline your warehouse operations with our powerful,
-            intuitive platform designed for modern businesses.
-          </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-xl text-neutral-300 mb-8 max-w-md"
+            >
+              Advanced tools for modern businesses to manage stock, track movements, and optimize operations.
+            </motion.p>
+          </div>
 
           {/* Features Grid */}
-          <div className="grid grid-cols-2 gap-6">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + index * 0.1 }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="card-glass p-5 group cursor-pointer"
-              >
-                <div className="p-2 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-all">
-                  <feature.icon className="w-5 h-5 text-accent-teal" />
-                </div>
-                <h3 className="text-white font-semibold mb-1">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-neutral-400">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="grid grid-cols-2 gap-6 mb-12"
+          >
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.7 + index * 0.1 }}
+                  className="card-glass p-6 backdrop-blur-xl border border-white/10 hover:border-accent-teal/30 transition-all duration-300 group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 rounded-lg bg-white/10 group-hover:bg-accent-teal/20 transition-colors">
+                      <Icon className="w-6 h-6 text-accent-teal" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold mb-1">{feature.title}</h3>
+                      <p className="text-sm text-neutral-400">{feature.description}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
 
           {/* Stats */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="flex gap-8 mt-12 pt-8 border-t border-white/10"
+            className="flex gap-8"
           >
-            {[
-              { label: 'Active Users', value: '50K+' },
-              { label: 'Products Managed', value: '2M+' },
-              { label: 'Uptime', value: '99.9%' },
-            ].map((stat, i) => (
-              <div key={i}>
-                <div className="text-3xl font-bold text-white mb-1">
-                  {stat.value}
-                </div>
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
                 <div className="text-sm text-neutral-400">{stat.label}</div>
               </div>
             ))}
@@ -368,23 +406,6 @@ export const LoginPage = () => {
               </Link>
             </motion.p>
           </div>
-
-          {/* Trust Badges */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-6 text-center"
-          >
-            <p className="text-xs text-neutral-500 mb-3">
-              Trusted by leading companies worldwide
-            </p>
-            <div className="flex justify-center items-center gap-6 opacity-50">
-              <Shield className="w-6 h-6 text-white" />
-              <div className="text-white font-bold">256-bit SSL</div>
-              <Lock className="w-5 h-5 text-white" />
-            </div>
-          </motion.div>
         </motion.div>
       </div>
     </div>

@@ -24,6 +24,7 @@ import { CategoriesPage } from '@/pages/products/CategoriesPage';
 // Inventory Pages
 import { LotsPage } from '@/pages/inventory/LotsPage';
 import { SerialsPage } from '@/pages/inventory/SerialsPage';
+import { InventoryPage } from '@/pages/inventory/InventoryPage';
 
 // Locations Pages
 import { SitesPage } from '@/pages/locations/SitesPage';
@@ -166,7 +167,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ <Route
+          path="/inventory/Inventories"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InventoryPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* Locations Routes */}
         <Route
           path="/locations/sites"
