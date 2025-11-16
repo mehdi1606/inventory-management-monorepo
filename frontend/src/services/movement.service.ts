@@ -29,6 +29,40 @@ export const movementService = {
     return response.data;
   },
 
+  // Movement Actions
+  startMovement: async (id: string): Promise<Movement> => {
+    const response = await apiClient.post<Movement>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/start`);
+    return response.data;
+  },
+
+  completeMovement: async (id: string): Promise<Movement> => {
+    const response = await apiClient.post<Movement>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/complete`);
+    return response.data;
+  },
+
+  cancelMovement: async (id: string, reason: string): Promise<Movement> => {
+    const response = await apiClient.post<Movement>(
+      `${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/cancel`,
+      null,
+      { params: { reason } }
+    );
+    return response.data;
+  },
+
+  holdMovement: async (id: string, reason: string): Promise<Movement> => {
+    const response = await apiClient.post<Movement>(
+      `${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/hold`,
+      null,
+      { params: { reason } }
+    );
+    return response.data;
+  },
+
+  releaseMovement: async (id: string): Promise<Movement> => {
+    const response = await apiClient.post<Movement>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/release`);
+    return response.data;
+  },
+
   // Movement Lines
   getMovementLines: async (params?: PaginationParams): Promise<PaginatedResponse<MovementLine>> => {
     const response = await apiClient.get<PaginatedResponse<MovementLine>>(API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES, { params });
