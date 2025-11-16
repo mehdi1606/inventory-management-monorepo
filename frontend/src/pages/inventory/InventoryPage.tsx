@@ -431,6 +431,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
   const fetchWarehouses = async () => {
     try {
       const response = await locationService.getWarehouses();
+      console.log('Warehouses response:', response);
       setWarehouses(Array.isArray(response) ? response : response?.content || []);
     } catch (error) {
       console.error('Failed to fetch warehouses:', error);
@@ -585,27 +586,27 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
               </Select>
             </div>
 
-            {/* Location - Required */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.locationId}
-                onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
-                required
-                disabled={!formData.warehouseId || mode === 'edit'}
-              >
-                <option value="">
-                  {formData.warehouseId ? 'Select a location' : 'Select warehouse first'}
-                </option>
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
+         {/* Location - Required */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Location <span className="text-red-500">*</span>
+  </label>
+  <Select
+    value={formData.locationId}
+    onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
+    required
+    disabled={!formData.warehouseId || mode === 'edit'}
+  >
+    <option value="">
+      {formData.warehouseId ? 'Select a location' : 'Select warehouse first'}
+    </option>
+    {locations.map((loc) => (
+      <option key={loc.id} value={loc.id}>
+        {loc.code} {loc.name ? `- ${loc.name}` : ''}
+      </option>
+    ))}
+  </Select>
+</div>
 
             {/* Lot - Optional */}
             <div>
