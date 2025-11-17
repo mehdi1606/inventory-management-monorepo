@@ -1,8 +1,9 @@
 // frontend/src/services/movement.service.ts
 
 import { apiClient } from './api';
-import { API_ENDPOINTS } from '@/config/constants';
+import { API_ENDPOINTS, STORAGE_KEYS } from '@/config/constants';
 import { Movement, MovementLine, MovementTask, PaginatedResponse, PaginationParams, ApiResponse } from '@/types';
+import { storage } from '@/utils/storage';
 
 export const movementService = {
   // Movements
@@ -17,12 +18,41 @@ export const movementService = {
   },
 
   createMovement: async (data: Partial<Movement>): Promise<ApiResponse<Movement>> => {
-    const response = await apiClient.post<ApiResponse<Movement>>(API_ENDPOINTS.MOVEMENTS.MOVEMENTS, data);
+    // ✅ FIX: Get user ID from storage and send in header
+    const user = storage.get<any>(STORAGE_KEYS.USER);
+    const userId = user?.id || user?.userId;
+    
+    console.log('🚀 Creating movement with user ID:', userId);
+    console.log('📦 Movement data:', data);
+    
+    const headers: any = {};
+    if (userId) {
+      headers['X-User-Id'] = userId;
+    }
+    
+    const response = await apiClient.post<ApiResponse<Movement>>(
+      API_ENDPOINTS.MOVEMENTS.MOVEMENTS, 
+      data,
+      { headers }
+    );
     return response.data;
   },
 
   updateMovement: async (id: string, data: Partial<Movement>): Promise<ApiResponse<Movement>> => {
-    const response = await apiClient.put<ApiResponse<Movement>>(API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id), data);
+    // ✅ Also add user ID to update
+    const user = storage.get<any>(STORAGE_KEYS.USER);
+    const userId = user?.id || user?.userId;
+    
+    const headers: any = {};
+    if (userId) {
+      headers['X-User-Id'] = userId;
+    }
+    
+    const response = await apiClient.put<ApiResponse<Movement>>(
+      API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id), 
+      data,
+      { headers }
+    );
     return response.data;
   },
 
@@ -42,31 +72,21 @@ export const movementService = {
   },
 
   cancelMovement: async (id: string, reason?: string): Promise<ApiResponse<Movement>> => {
-    const response = await apiClient.post<ApiResponse<Movement>>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/cancel`, { reason });
+    const response = await apiClient.post<ApiResponse<Movement>>(
+      `${API_ENDPOINTS.MOVEMENTS.MOVEMENT_BY_ID(id)}/cancel`,
+      { reason }
+    );
     return response.data;
   },
 
-  // Movement Lines - FIXED to use existing backend endpoints
+  // Movement Lines
   getMovementLines: async (): Promise<MovementLine[]> => {
-    try {
-      // Since backend doesn't have a "get all lines" endpoint, we'll get lines with variance
-      // This returns a List, not a PaginatedResponse
-      const response = await apiClient.get<MovementLine[]>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES}/variance`);
-      return response.data || [];
-    } catch (error) {
-      console.error('Error fetching movement lines:', error);
-      // Return empty array instead of throwing to prevent page crash
-      return [];
-    }
+    const response = await apiClient.get<MovementLine[]>(API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES);
+    return response.data || [];
   },
 
   getMovementLinesByMovement: async (movementId: string): Promise<MovementLine[]> => {
     const response = await apiClient.get<MovementLine[]>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES}/movement/${movementId}`);
-    return response.data || [];
-  },
-
-  getMovementLinesByStatus: async (status: string): Promise<MovementLine[]> => {
-    const response = await apiClient.get<MovementLine[]>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES}/status/${status}`);
     return response.data || [];
   },
 
@@ -75,8 +95,8 @@ export const movementService = {
     return response.data;
   },
 
-  addLineToMovement: async (movementId: string, data: Partial<MovementLine>): Promise<ApiResponse<MovementLine>> => {
-    const response = await apiClient.post<ApiResponse<MovementLine>>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES}/movement/${movementId}`, data);
+  createMovementLine: async (data: Partial<MovementLine>): Promise<ApiResponse<MovementLine>> => {
+    const response = await apiClient.post<ApiResponse<MovementLine>>(API_ENDPOINTS.MOVEMENTS.MOVEMENT_LINES, data);
     return response.data;
   },
 
@@ -104,16 +124,13 @@ export const movementService = {
     return response.data;
   },
 
-  // Movement Tasks - FIXED to use existing backend endpoints
+  // Movement Tasks
   getMovementTasks: async (): Promise<MovementTask[]> => {
     try {
-      // Since backend doesn't have a "get all tasks" endpoint, we'll get unassigned tasks
-      // This returns a List, not a PaginatedResponse
       const response = await apiClient.get<MovementTask[]>(`${API_ENDPOINTS.MOVEMENTS.MOVEMENT_TASKS}/unassigned`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching movement tasks:', error);
-      // Return empty array instead of throwing to prevent page crash
       return [];
     }
   },

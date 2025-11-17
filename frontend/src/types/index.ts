@@ -156,19 +156,14 @@ export interface Inventory {
   status: string;
   lastUpdated: string;
 }
+// Movement Types - CORRECTED TO MATCH BACKEND
 
-// Movement Types (matching backend DTOs)
 export enum MovementType {
-  RECEIPT = 'RECEIPT',
-  ISSUE = 'ISSUE',
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
   TRANSFER = 'TRANSFER',
   ADJUSTMENT = 'ADJUSTMENT',
-  PICKING = 'PICKING',
-  PUTAWAY = 'PUTAWAY',
-  RETURN = 'RETURN',
-  CYCLE_COUNT = 'CYCLE_COUNT',
-  QUARANTINE = 'QUARANTINE',
-  RELOCATION = 'RELOCATION'
+  RETURN = 'RETURN'
 }
 
 export enum MovementStatus {
@@ -177,40 +172,30 @@ export enum MovementStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
-  ON_HOLD = 'ON_HOLD',
-  PARTIALLY_COMPLETED = 'PARTIALLY_COMPLETED'
+  ON_HOLD = 'ON_HOLD'
 }
 
 export enum MovementPriority {
   LOW = 'LOW',
   NORMAL = 'NORMAL',
-  HIGH = 'HIGH',
-  URGENT = 'URGENT',
-  CRITICAL = 'CRITICAL'
+  HIGH = 'HIGH'
 }
 
 export enum LineStatus {
   PENDING = 'PENDING',
   ALLOCATED = 'ALLOCATED',
   PICKED = 'PICKED',
-  PACKED = 'PACKED',
   IN_TRANSIT = 'IN_TRANSIT',
-  RECEIVED = 'RECEIVED',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  SHORT_PICKED = 'SHORT_PICKED'
+  CANCELLED = 'CANCELLED'
 }
 
 export enum TaskType {
-  PICK = 'PICK',
-  PACK = 'PACK',
-  PUT_AWAY = 'PUT_AWAY',
-  COUNT = 'COUNT',
-  INSPECT = 'INSPECT',
-  LOAD = 'LOAD',
-  UNLOAD = 'UNLOAD',
-  STAGE = 'STAGE',
-  REPLENISH = 'REPLENISH'
+  PICKING = 'PICKING',
+  PACKING = 'PACKING',
+  LOADING = 'LOADING',
+  UNLOADING = 'UNLOADING',
+  COUNTING = 'COUNTING'
 }
 
 export enum TaskStatus {
@@ -218,8 +203,7 @@ export enum TaskStatus {
   ASSIGNED = 'ASSIGNED',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  FAILED = 'FAILED'
+  CANCELLED = 'CANCELLED'
 }
 
 export interface Movement {
@@ -342,7 +326,6 @@ export interface MovementTaskRequestDto {
   instructions?: string;
   notes?: string;
 }
-
 // Location Types
 export interface Site {
   id: string;

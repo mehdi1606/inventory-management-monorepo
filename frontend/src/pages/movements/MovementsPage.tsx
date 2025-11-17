@@ -1,9 +1,9 @@
 // src/pages/movements/MovementsPage.tsx
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, TruckIcon, PackageCheck, Play, CheckCircle, XCircle, Filter, AlertCircle, Clock, Package } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Play, CheckCircle, XCircle, Pause, AlertCircle, Clock, Package } from 'lucide-react';
 import { movementService } from '@/services/movement.service';
-import { Movement } from '@/types';
+import { Movement, MovementStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -37,19 +37,24 @@ export const MovementsPage = () => {
     inProgressMovements: 0,
     completedMovements: 0,
     cancelledMovements: 0,
-    urgentMovements: 0,
-    todayMovements: 0,
-    overdueMovements: 0,
+    onHoldMovements: 0,
   });
+
+  useEffect(() => {
+    fetchMovements();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, filterType, filterStatus, filterWarehouse, movements]);
 
   // Fetch movements
   const fetchMovements = async () => {
     setLoading(true);
     try {
       const response = await movementService.getMovements();
-      const movementsData = Array.isArray(response) ? response : response.content || [];
+      const movementsData = Array.isArray(response) ? response : response?.content || [];
       setMovements(movementsData);
-      setFilteredMovements(movementsData);
       calculateStats(movementsData);
     } catch (error) {
       toast.error('Failed to fetch movements');
@@ -59,74 +64,47 @@ export const MovementsPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchMovements();
-  }, []);
-
   // Calculate statistics
-  const calculateStats = (movementsData: Movement[]) => {
-    const totalMovements = movementsData.length;
-    const pendingMovements = movementsData.filter(m => m.status === 'PENDING').length;
-    const inProgressMovements = movementsData.filter(m => m.status === 'IN_PROGRESS').length;
-    const completedMovements = movementsData.filter(m => m.status === 'COMPLETED').length;
-    const cancelledMovements = movementsData.filter(m => m.status === 'CANCELLED').length;
-    const urgentMovements = movementsData.filter(m => m.priority === 'URGENT' || m.priority === 'CRITICAL').length;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMovements = movementsData.filter(m => {
-      const movementDate = new Date(m.movementDate);
-      movementDate.setHours(0, 0, 0, 0);
-      return movementDate.getTime() === today.getTime();
-    }).length;
-
-    const overdueMovements = movementsData.filter(m => {
-      if (!m.expectedDate || m.status === 'COMPLETED' || m.status === 'CANCELLED') return false;
-      return new Date(m.expectedDate) < new Date();
-    }).length;
-
+  const calculateStats = (data: Movement[]) => {
     setStats({
-      totalMovements,
-      pendingMovements,
-      inProgressMovements,
-      completedMovements,
-      cancelledMovements,
-      urgentMovements,
-      todayMovements,
-      overdueMovements,
+      totalMovements: data.length,
+      pendingMovements: data.filter(m => m.status === MovementStatus.PENDING).length,
+      inProgressMovements: data.filter(m => m.status === MovementStatus.IN_PROGRESS).length,
+      completedMovements: data.filter(m => m.status === MovementStatus.COMPLETED).length,
+      cancelledMovements: data.filter(m => m.status === MovementStatus.CANCELLED).length,
+      onHoldMovements: data.filter(m => m.status === MovementStatus.ON_HOLD).length,
     });
   };
 
   // Apply filters
-  useEffect(() => {
-    let filtered = movements;
+  const applyFilters = () => {
+    let filtered = [...movements];
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (movement) =>
-          movement.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          movement.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+        (m) =>
+          m.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (filterType) {
-      filtered = filtered.filter((movement) => movement.type === filterType);
+      filtered = filtered.filter((m) => m.type === filterType);
     }
 
     if (filterStatus) {
-      filtered = filtered.filter((movement) => movement.status === filterStatus);
+      filtered = filtered.filter((m) => m.status === filterStatus);
     }
 
     if (filterWarehouse) {
-      filtered = filtered.filter((movement) => movement.warehouseId === filterWarehouse);
+      filtered = filtered.filter((m) => m.warehouseId === filterWarehouse);
     }
 
     setFilteredMovements(filtered);
-  }, [searchTerm, filterType, filterStatus, filterWarehouse, movements]);
+  };
 
   // Handlers
   const handleCreate = () => {
-    setSelectedMovement(null);
     setIsCreateModalOpen(true);
   };
 
@@ -145,39 +123,6 @@ export const MovementsPage = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleStart = async (movement: Movement) => {
-    try {
-      await movementService.startMovement(movement.id);
-      toast.success('Movement started successfully');
-      fetchMovements();
-    } catch (error) {
-      toast.error('Failed to start movement');
-      console.error(error);
-    }
-  };
-
-  const handleComplete = async (movement: Movement) => {
-    try {
-      await movementService.completeMovement(movement.id);
-      toast.success('Movement completed successfully');
-      fetchMovements();
-    } catch (error) {
-      toast.error('Failed to complete movement');
-      console.error(error);
-    }
-  };
-
-  const handleCancel = async (movement: Movement) => {
-    try {
-      await movementService.cancelMovement(movement.id, 'Cancelled by user');
-      toast.success('Movement cancelled successfully');
-      fetchMovements();
-    } catch (error) {
-      toast.error('Failed to cancel movement');
-      console.error(error);
-    }
-  };
-
   const confirmDelete = async () => {
     if (!selectedMovement) return;
 
@@ -186,8 +131,79 @@ export const MovementsPage = () => {
       toast.success('Movement deleted successfully');
       fetchMovements();
       setIsDeleteDialogOpen(false);
-    } catch (error) {
-      toast.error('Failed to delete movement');
+      setSelectedMovement(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete movement');
+      console.error(error);
+    }
+  };
+
+  const handleStart = async (movementId: string) => {
+    try {
+      await movementService.startMovement(movementId);
+      toast.success('Movement started successfully');
+      fetchMovements();
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to start movement');
+      console.error(error);
+    }
+  };
+
+  const handleComplete = async (movementId: string) => {
+    try {
+      await movementService.completeMovement(movementId);
+      toast.success('Movement completed successfully');
+      fetchMovements();
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to complete movement');
+      console.error(error);
+    }
+  };
+
+  const handleCancel = async (movementId: string, reason: string) => {
+    try {
+      await movementService.cancelMovement(movementId, reason);
+      toast.success('Movement cancelled successfully');
+      fetchMovements();
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to cancel movement');
+      console.error(error);
+    }
+  };
+
+  const handleHold = async (movementId: string, reason: string) => {
+    try {
+      await movementService.holdMovement(movementId, reason);
+      toast.success('Movement put on hold');
+      fetchMovements();
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to hold movement');
+      console.error(error);
+    }
+  };
+
+  const handleRelease = async (movementId: string) => {
+    try {
+      await movementService.releaseMovement(movementId);
+      toast.success('Movement released from hold');
+      fetchMovements();
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to release movement');
       console.error(error);
     }
   };
@@ -196,98 +212,39 @@ export const MovementsPage = () => {
     fetchMovements();
     setIsCreateModalOpen(false);
     setIsEditModalOpen(false);
+    setSelectedMovement(null);
   };
 
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'PARTIALLY_COMPLETED':
-        return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400';
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'ON_HOLD':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  // Get type color
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'RECEIPT':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'ISSUE':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'TRANSFER':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'ADJUSTMENT':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'PICKING':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-      case 'PUTAWAY':
-        return 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400';
-      case 'RETURN':
-        return 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400';
-      case 'CYCLE_COUNT':
-        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'LOW':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-      case 'NORMAL':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'HIGH':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-      case 'URGENT':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'CRITICAL':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  const isOverdue = (movement: Movement) => {
-    if (!movement.expectedDate || movement.status === 'COMPLETED' || movement.status === 'CANCELLED') return false;
-    return new Date(movement.expectedDate) < new Date();
+  // Status badge color
+  const getStatusColor = (status: MovementStatus) => {
+    const colors = {
+      [MovementStatus.DRAFT]: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+      [MovementStatus.PENDING]: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+      [MovementStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+      [MovementStatus.COMPLETED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+      [MovementStatus.CANCELLED]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+      [MovementStatus.ON_HOLD]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-xl shadow-lg">
-                <TruckIcon className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Movements
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Manage stock movements and transfers across warehouses
-                </p>
-              </div>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Movements
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Manage stock movements and transfers across warehouses
+              </p>
             </div>
             <Button
               onClick={handleCreate}
@@ -309,7 +266,7 @@ export const MovementsPage = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Movements</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Total</p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
                   {stats.totalMovements}
                 </p>
@@ -333,8 +290,8 @@ export const MovementsPage = () => {
                   {stats.inProgressMovements}
                 </p>
               </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Play className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Clock className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </motion.div>
@@ -347,13 +304,13 @@ export const MovementsPage = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Pending</p>
-                <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">
-                  {stats.pendingMovements}
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+                  {stats.completedMovements}
                 </p>
               </div>
-              <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                <Clock className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </motion.div>
@@ -366,109 +323,25 @@ export const MovementsPage = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
-                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                  {stats.completedMovements}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {stats.totalMovements > 0 ? Math.round((stats.completedMovements / stats.totalMovements) * 100) : 0}% completion
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">On Hold</p>
+                <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">
+                  {stats.onHoldMovements}
                 </p>
               </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Additional Stats Row */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-neutral-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Today</p>
-                <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-                  {stats.todayMovements}
-                </p>
-              </div>
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <TruckIcon className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-neutral-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Urgent</p>
-                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">
-                  {stats.urgentMovements}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-neutral-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Overdue</p>
-                <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">
-                  {stats.overdueMovements}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-neutral-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Cancelled</p>
-                <p className="text-3xl font-bold text-gray-600 dark:text-gray-400 mt-2">
-                  {stats.cancelledMovements}
-                </p>
-              </div>
-              <div className="p-3 bg-gray-100 dark:bg-gray-900/30 rounded-lg">
-                <XCircle className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Pause className="w-8 h-8 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Search & Filters */}
+        {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-6 mb-6 border border-gray-200 dark:border-neutral-700"
+          transition={{ delay: 0.5 }}
+          className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-200 dark:border-neutral-700"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Search & Filters</h3>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -480,59 +353,48 @@ export const MovementsPage = () => {
                 className="pl-10"
               />
             </div>
-            <Select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-            >
+
+            <Select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
               <option value="">All Types</option>
-              <option value="RECEIPT">Receipt</option>
-              <option value="ISSUE">Issue</option>
+              <option value="INBOUND">Inbound</option>
+              <option value="OUTBOUND">Outbound</option>
               <option value="TRANSFER">Transfer</option>
               <option value="ADJUSTMENT">Adjustment</option>
-              <option value="PICKING">Picking</option>
-              <option value="PUTAWAY">Putaway</option>
               <option value="RETURN">Return</option>
-              <option value="CYCLE_COUNT">Cycle Count</option>
             </Select>
-            <Select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
+
+            <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
               <option value="">All Statuses</option>
               <option value="DRAFT">Draft</option>
               <option value="PENDING">Pending</option>
               <option value="IN_PROGRESS">In Progress</option>
-              <option value="PARTIALLY_COMPLETED">Partially Completed</option>
               <option value="COMPLETED">Completed</option>
               <option value="CANCELLED">Cancelled</option>
               <option value="ON_HOLD">On Hold</option>
             </Select>
-            <Select
-              value={filterWarehouse}
-              onChange={(e) => setFilterWarehouse(e.target.value)}
-            >
+
+            <Select value={filterWarehouse} onChange={(e) => setFilterWarehouse(e.target.value)}>
               <option value="">All Warehouses</option>
-              {/* Add warehouse options */}
             </Select>
           </div>
         </motion.div>
 
-        {/* Movements Table */}
+        {/* Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0 }}
-          className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-neutral-700"
+          transition={{ delay: 0.6 }}
+          className="bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-gray-200 dark:border-neutral-700 overflow-hidden"
         >
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-neutral-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Movements ({filteredMovements.length})
-            </h3>
-          </div>
-
           {loading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : filteredMovements.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+              <p className="text-lg font-medium">No movements found</p>
+              <p className="text-sm mt-2">Create your first movement to get started</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -540,22 +402,22 @@ export const MovementsPage = () => {
                 <thead className="bg-gray-50 dark:bg-neutral-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Movement #
+                      Reference
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Date
+                      Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Priority
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
+                      Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Progress
+                      Lines
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
@@ -563,109 +425,78 @@ export const MovementsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-neutral-800 divide-y divide-gray-200 dark:divide-neutral-700">
-                  {filteredMovements.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                        <TruckIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                        <p className="text-lg font-medium">No movements found</p>
-                        <p className="text-sm mt-2">Try adjusting your search or filters, or create a new movement</p>
+                  {filteredMovements.map((movement) => (
+                    <tr
+                      key={movement.id}
+                      className="hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {movement.referenceNumber || 'N/A'}
+                        </div>
                       </td>
-                    </tr>
-                  ) : (
-                    filteredMovements.map((movement) => (
-                      <tr 
-                        key={movement.id} 
-                        className={`hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors ${isOverdue(movement) ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {movement.referenceNumber || `MOV-${movement.id.slice(0, 8)}`}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(movement.type)}`}>
-                            {movement.type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          <div>{format(new Date(movement.movementDate), 'MMM dd, yyyy')}</div>
-                          {movement.expectedDate && (
-                            <div className={`text-xs ${isOverdue(movement) ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                              Due: {format(new Date(movement.expectedDate), 'MMM dd')}
-                              {isOverdue(movement) && ' (Overdue)'}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(movement.priority)}`}>
-                            {movement.priority}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movement.status)}`}>
-                            {movement.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {movement.totalLines && movement.completedLines !== undefined ? (
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div
-                                  className="bg-blue-600 h-2 rounded-full"
-                                  style={{ width: `${(movement.completedLines / movement.totalLines) * 100}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs">
-                                {movement.completedLines}/{movement.totalLines}
-                              </span>
-                            </div>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end gap-2">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-300">
+                          {movement.type}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movement.status)}`}>
+                          {movement.status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-300">
+                          {movement.priority}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-300">
+                          {format(new Date(movement.movementDate), 'MMM dd, yyyy')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-300">
+                          {movement.lines?.length || 0}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleView(movement)}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            title="View"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          {(movement.status === MovementStatus.DRAFT || movement.status === MovementStatus.PENDING) && (
                             <button
-                              onClick={() => handleView(movement)}
-                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                              title="View Details"
+                              onClick={() => handleEdit(movement)}
+                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                              title="Edit"
                             >
-                              <Eye size={18} />
+                              <Edit size={18} />
                             </button>
-                            {movement.status !== 'COMPLETED' && movement.status !== 'CANCELLED' && (
-                              <>
-                                <button
-                                  onClick={() => handleEdit(movement)}
-                                  className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                                  title="Edit"
-                                >
-                                  <Edit size={18} />
-                                </button>
-                                {movement.status === 'PENDING' && (
-                                  <button
-                                    onClick={() => handleStart(movement)}
-                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                    title="Start"
-                                  >
-                                    <Play size={18} />
-                                  </button>
-                                )}
-                                {movement.status === 'IN_PROGRESS' && (
-                                  <button
-                                    onClick={() => handleComplete(movement)}
-                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                    title="Complete"
-                                  >
-                                    <CheckCircle size={18} />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleCancel(movement)}
-                                  className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300"
-                                  title="Cancel"
-                                >
-                                  <XCircle size={18} />
-                                </button>
-                              </>
-                            )}
+                          )}
+                          {(movement.status === MovementStatus.PENDING || movement.status === MovementStatus.DRAFT) && (
+                            <button
+                              onClick={() => handleStart(movement.id)}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                              title="Start"
+                            >
+                              <Play size={18} />
+                            </button>
+                          )}
+                          {movement.status === MovementStatus.IN_PROGRESS && (
+                            <button
+                              onClick={() => handleComplete(movement.id)}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                              title="Complete"
+                            >
+                              <CheckCircle size={18} />
+                            </button>
+                          )}
+                          {(movement.status === MovementStatus.DRAFT || movement.status === MovementStatus.CANCELLED) && (
                             <button
                               onClick={() => handleDelete(movement)}
                               className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
@@ -673,11 +504,11 @@ export const MovementsPage = () => {
                             >
                               <Trash2 size={18} />
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -701,7 +532,14 @@ export const MovementsPage = () => {
         <MovementDetailModal
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
-          movement={selectedMovement}
+          data={selectedMovement}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onStart={handleStart}
+          onComplete={handleComplete}
+          onCancel={handleCancel}
+          onHold={handleHold}
+          onRelease={handleRelease}
         />
 
         <DeleteConfirmDialog
