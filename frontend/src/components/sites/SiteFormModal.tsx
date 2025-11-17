@@ -1,6 +1,6 @@
 // src/components/sites/SiteFormModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { locationService } from '@/services/location.service';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -13,11 +13,6 @@ interface SiteFormModalProps {
   onSuccess: () => void;
   mode: 'create' | 'edit';
   site?: any;
-}
-
-interface SettingItem {
-  key: string;
-  value: string;
 }
 
 export const SiteFormModal: React.FC<SiteFormModalProps> = ({
@@ -34,8 +29,6 @@ export const SiteFormModal: React.FC<SiteFormModalProps> = ({
     address: ''
   });
   
-  // Easy settings - array of key-value pairs
-  const [settings, setSettings] = useState<SettingItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -46,23 +39,6 @@ export const SiteFormModal: React.FC<SiteFormModalProps> = ({
         timezone: site.timezone || '',
         address: site.address || ''
       });
-
-      // Parse JSON string settings from backend to array
-      if (site.settings) {
-        try {
-          const parsedSettings = JSON.parse(site.settings);
-          const settingsArray = Object.entries(parsedSettings).map(([key, value]) => ({
-            key,
-            value: String(value)
-          }));
-          setSettings(settingsArray);
-        } catch (e) {
-          console.error('Failed to parse settings:', e);
-          setSettings([]);
-        }
-      } else {
-        setSettings([]);
-      }
     } else {
       setFormData({
         name: '',
@@ -70,51 +46,19 @@ export const SiteFormModal: React.FC<SiteFormModalProps> = ({
         timezone: '',
         address: ''
       });
-      setSettings([]);
     }
   }, [mode, site, isOpen]);
-
-  // Add new setting row
-  const handleAddSetting = () => {
-    setSettings([...settings, { key: '', value: '' }]);
-  };
-
-  // Remove setting row
-  const handleRemoveSetting = (index: number) => {
-    setSettings(settings.filter((_, i) => i !== index));
-  };
-
-  // Update setting key or value
-  const handleSettingChange = (index: number, field: 'key' | 'value', value: string) => {
-    const newSettings = [...settings];
-    newSettings[index][field] = value;
-    setSettings(newSettings);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Convert settings array to JSON object then to string
-      let settingsJson = null;
-      if (settings.length > 0) {
-        const settingsObject: Record<string, string> = {};
-        settings.forEach(item => {
-          if (item.key.trim()) { // Only add if key is not empty
-            settingsObject[item.key.trim()] = item.value;
-          }
-        });
-        // Convert to JSON string for backend: "{\"key\":\"value\"}"
-        settingsJson = JSON.stringify(settingsObject);
-      }
-
       const payload = {
         name: formData.name,
         type: formData.type,
         timezone: formData.timezone || null,
-        address: formData.address || null,
-        settings: settingsJson // Send as JSON string
+        address: formData.address || null
       };
 
       if (mode === 'create') {
@@ -195,12 +139,40 @@ export const SiteFormModal: React.FC<SiteFormModalProps> = ({
             <label className="block text-sm font-medium mb-2">
               Timezone
             </label>
-            <Input
-              type="text"
+            <Select
               value={formData.timezone}
               onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-              placeholder="e.g., America/New_York, Europe/Paris, Asia/Tokyo"
-            />
+            >
+              <option value="">Select timezone</option>
+              <option value="America/New_York">America/New_York (EST/EDT)</option>
+              <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+              <option value="America/Denver">America/Denver (MST/MDT)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+              <option value="America/Phoenix">America/Phoenix (MST)</option>
+              <option value="America/Anchorage">America/Anchorage (AKST/AKDT)</option>
+              <option value="Pacific/Honolulu">Pacific/Honolulu (HST)</option>
+              <option value="America/Toronto">America/Toronto (EST/EDT)</option>
+              <option value="America/Vancouver">America/Vancouver (PST/PDT)</option>
+              <option value="America/Mexico_City">America/Mexico_City (CST/CDT)</option>
+              <option value="Europe/London">Europe/London (GMT/BST)</option>
+              <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+              <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+              <option value="Europe/Madrid">Europe/Madrid (CET/CEST)</option>
+              <option value="Europe/Rome">Europe/Rome (CET/CEST)</option>
+              <option value="Europe/Amsterdam">Europe/Amsterdam (CET/CEST)</option>
+              <option value="Europe/Brussels">Europe/Brussels (CET/CEST)</option>
+              <option value="Europe/Warsaw">Europe/Warsaw (CET/CEST)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+              <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+              <option value="Asia/Hong_Kong">Asia/Hong_Kong (HKT)</option>
+              <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+              <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEDT/AEST)</option>
+              <option value="Australia/Melbourne">Australia/Melbourne (AEDT/AEST)</option>
+              <option value="Australia/Brisbane">Australia/Brisbane (AEST)</option>
+              <option value="Pacific/Auckland">Pacific/Auckland (NZDT/NZST)</option>
+            </Select>
           </div>
 
           {/* Address - Optional */}
@@ -214,63 +186,6 @@ export const SiteFormModal: React.FC<SiteFormModalProps> = ({
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Enter full address"
             />
-          </div>
-
-          {/* Settings - Easy Key-Value Editor */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium">
-                Settings (Optional)
-              </label>
-              <Button
-                type="button"
-                onClick={handleAddSetting}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Plus size={16} />
-                Add Setting
-              </Button>
-            </div>
-            
-            {settings.length === 0 ? (
-              <div className="border rounded p-4 text-center text-gray-500 text-sm">
-                No settings added. Click "Add Setting" to add configuration options.
-              </div>
-            ) : (
-              <div className="border rounded p-3 space-y-2">
-                {settings.map((setting, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Input
-                      type="text"
-                      placeholder="Key (e.g., capacity)"
-                      value={setting.key}
-                      onChange={(e) => handleSettingChange(index, 'key', e.target.value)}
-                      className="flex-1"
-                    />
-                    <span className="text-gray-400">:</span>
-                    <Input
-                      type="text"
-                      placeholder="Value (e.g., 10000)"
-                      value={setting.value}
-                      onChange={(e) => handleSettingChange(index, 'value', e.target.value)}
-                      className="flex-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSetting(index)}
-                      className="text-red-600 hover:text-red-800 p-2"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Add custom key-value pairs for additional configuration
-            </p>
           </div>
 
           {/* Action Buttons */}

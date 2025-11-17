@@ -28,7 +28,12 @@ export const locationService = {
     const response = await apiClient.delete<ApiResponse<void>>(API_ENDPOINTS.LOCATIONS.LOCATION_BY_ID(id));
     return response.data;
   },
-
+  getLocationsByWarehouse: async (warehouseId: string): Promise<any> => {
+    const response = await apiClient.get('/api/locations', {
+      params: { warehouseId }  // ✅ Use query parameter instead
+    });
+    return response.data;
+  },
   // Sites
   getSites: async (params?: PaginationParams): Promise<PaginatedResponse<Site>> => {
     const response = await apiClient.get<PaginatedResponse<Site>>(API_ENDPOINTS.LOCATIONS.SITES, { params });

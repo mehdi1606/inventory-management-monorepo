@@ -9,9 +9,11 @@ import {
   Loader2,
   ArrowRight,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Package
 } from 'lucide-react';
 import { GradientButton } from '@/components/ui/GradientButton';
+import { ThemeToggle } from '@/components/ui/Themetoggle';
 import { ROUTES } from '@/config/constants';
 import toast from 'react-hot-toast';
 
@@ -71,12 +73,22 @@ export const VerifyEmailPage = () => {
       await authService.resendVerificationEmail(email);
       toast.success('Verification email sent! Please check your inbox.');
     } catch (error: any) {
-      console.error('Resend error:', error);
+      console.error('Resend email error:', error);
       toast.error(error.response?.data?.message || 'Failed to resend email');
     } finally {
       setResending(false);
     }
   };
+
+  // Floating particles
+  const particles = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    size: Math.random() * 4 + 2,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    duration: Math.random() * 10 + 10,
+    delay: Math.random() * 5,
+  }));
 
   const renderContent = () => {
     switch (status) {
@@ -87,61 +99,48 @@ export const VerifyEmailPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 mb-6 shadow-3d-xl">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 mb-6 shadow-lg shadow-primary-500/30">
               <Mail className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-3">
-              Verify Your Email
+
+            <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-3">
+              Check your inbox
             </h2>
-            <p className="text-neutral-300 mb-8">
-              We've sent a verification email to your inbox. Click the link in the email to verify your account.
+            <p className="text-neutral-600 dark:text-neutral-300 mb-8">
+              We've sent a verification link to your email address.
+              Click the link to verify your account.
             </p>
-            
-            <div className="text-left space-y-3 p-6 bg-white/5 rounded-xl border border-white/10">
-              <h4 className="text-white font-semibold mb-3">Next Steps:</h4>
-              {[
-                'Check your email inbox (and spam folder)',
-                'Click the verification link in the email',
-                'You will be redirected automatically',
-                'Sign in with your credentials',
-              ].map((step, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.1 }}
-                  className="flex items-start gap-3"
-                >
-                  <div className="w-6 h-6 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                    {i + 1}
-                  </div>
-                  <p className="text-neutral-300 text-sm">{step}</p>
-                </motion.div>
-              ))}
+
+            <div className="p-6 bg-primary-500/10 dark:bg-primary-500/20 border border-primary-500/20 rounded-xl mb-8">
+              <p className="text-neutral-700 dark:text-neutral-300 text-sm">
+                Didn't receive the email? Check your spam folder or request a new verification link below.
+              </p>
             </div>
 
-            <div className="mt-8">
-              <p className="text-neutral-400 text-sm mb-4">
-                Didn't receive the email?
-              </p>
-              <div className="flex gap-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-glass flex-1 px-4 py-3 text-white placeholder-neutral-500"
-                  placeholder="your@email.com"
-                />
-                <GradientButton
-                  onClick={handleResendEmail}
-                  gradient="primary"
-                  loading={resending}
-                  icon={<RefreshCw className="w-4 h-4" />}
-                >
-                  Resend
-                </GradientButton>
-              </div>
+            <div className="flex gap-3 mb-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 bg-white dark:bg-neutral-700 border-2 border-neutral-200 dark:border-neutral-600 rounded-xl focus:border-primary-400 dark:focus:border-primary-400 focus:outline-none transition-colors text-neutral-800 dark:text-white placeholder-neutral-400"
+                placeholder="your@email.com"
+              />
+              <GradientButton
+                onClick={handleResendEmail}
+                gradient="primary"
+                loading={resending}
+                icon={<RefreshCw className="w-4 h-4" />}
+              >
+                Resend
+              </GradientButton>
             </div>
+
+            <Link
+              to={ROUTES.LOGIN}
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm transition-colors"
+            >
+              Back to Login
+            </Link>
           </motion.div>
         );
 
@@ -152,14 +151,12 @@ export const VerifyEmailPage = () => {
             animate={{ opacity: 1 }}
             className="text-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 mb-6 shadow-3d-xl">
-              <Loader2 className="w-10 h-10 text-white animate-spin" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-3">
-              Verifying Your Email...
+            <Loader2 className="w-16 h-16 text-primary-500 dark:text-primary-400 animate-spin mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-neutral-800 dark:text-white mb-2">
+              Verifying your email...
             </h2>
-            <p className="text-neutral-300">
-              Please wait while we verify your email address.
+            <p className="text-neutral-600 dark:text-neutral-300">
+              Please wait while we verify your account.
             </p>
           </motion.div>
         );
@@ -171,32 +168,23 @@ export const VerifyEmailPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
           >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{
-                type: 'spring',
-                stiffness: 200,
-                damping: 15,
-              }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-success to-success-light mb-6 shadow-3d-xl"
-            >
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-success to-success-light mb-6 shadow-lg shadow-success/30">
               <CheckCircle2 className="w-10 h-10 text-white" />
-            </motion.div>
+            </div>
 
-            <h2 className="text-3xl font-bold text-white mb-3">
-              Email Verified Successfully! 🎉
+            <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-3">
+              Email Verified! 🎉
             </h2>
-            <p className="text-neutral-300 mb-8">
+            <p className="text-neutral-600 dark:text-neutral-300 mb-8">
               Your email has been verified. You can now sign in to your account.
             </p>
 
-            <div className="p-6 bg-success/10 border border-success/20 rounded-xl mb-8">
+            <div className="p-6 bg-success/10 dark:bg-success/20 border border-success/20 rounded-xl mb-8">
               <div className="flex items-center justify-center gap-2 text-success mb-2">
                 <CheckCircle2 className="w-5 h-5" />
                 <span className="font-semibold">Account Activated</span>
               </div>
-              <p className="text-neutral-300 text-sm">
+              <p className="text-neutral-600 dark:text-neutral-300 text-sm">
                 Redirecting you to login page in a few seconds...
               </p>
             </div>
@@ -221,19 +209,19 @@ export const VerifyEmailPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-warning to-warning-light mb-6 shadow-3d-xl">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-warning to-warning-light mb-6 shadow-lg shadow-warning/30">
               <Clock className="w-10 h-10 text-white" />
             </div>
 
-            <h2 className="text-3xl font-bold text-white mb-3">
+            <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-3">
               Verification Link Expired
             </h2>
-            <p className="text-neutral-300 mb-8">
+            <p className="text-neutral-600 dark:text-neutral-300 mb-8">
               This verification link has expired. Please request a new one.
             </p>
 
-            <div className="p-6 bg-warning/10 border border-warning/20 rounded-xl mb-8">
-              <p className="text-neutral-300 text-sm">
+            <div className="p-6 bg-warning/10 dark:bg-warning/20 border border-warning/20 rounded-xl mb-8">
+              <p className="text-neutral-700 dark:text-neutral-300 text-sm">
                 Verification links expire after 24 hours for security reasons.
                 Enter your email below to receive a new verification link.
               </p>
@@ -244,7 +232,7 @@ export const VerifyEmailPage = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-glass flex-1 px-4 py-3 text-white placeholder-neutral-500"
+                className="flex-1 px-4 py-3 bg-white dark:bg-neutral-700 border-2 border-neutral-200 dark:border-neutral-600 rounded-xl focus:border-primary-400 dark:focus:border-primary-400 focus:outline-none transition-colors text-neutral-800 dark:text-white placeholder-neutral-400"
                 placeholder="your@email.com"
               />
               <GradientButton
@@ -259,7 +247,7 @@ export const VerifyEmailPage = () => {
 
             <Link
               to={ROUTES.LOGIN}
-              className="text-primary-400 hover:text-primary-300 text-sm transition-colors"
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm transition-colors"
             >
               Back to Login
             </Link>
@@ -273,47 +261,41 @@ export const VerifyEmailPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-danger to-danger-light mb-6 shadow-3d-xl">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-danger to-danger-light mb-6 shadow-lg shadow-danger/30">
               <XCircle className="w-10 h-10 text-white" />
             </div>
 
-            <h2 className="text-3xl font-bold text-white mb-3">
+            <h2 className="text-3xl font-bold text-neutral-800 dark:text-white mb-3">
               Verification Failed
             </h2>
-            <p className="text-neutral-300 mb-8">
+            <p className="text-neutral-600 dark:text-neutral-300 mb-8">
               We couldn't verify your email. The link may be invalid or already used.
             </p>
 
-            <div className="p-6 bg-danger/10 border border-danger/20 rounded-xl mb-8">
-              <p className="text-neutral-300 text-sm">
+            <div className="p-6 bg-danger/10 dark:bg-danger/20 border border-danger/20 rounded-xl mb-8">
+              <p className="text-neutral-700 dark:text-neutral-300 text-sm">
                 If you continue having issues, please contact support or try registering again.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex gap-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-glass flex-1 px-4 py-3 text-white placeholder-neutral-500"
-                  placeholder="your@email.com"
-                />
+            <div className="flex gap-3">
+              <Link to={ROUTES.REGISTER} className="flex-1">
                 <GradientButton
-                  onClick={handleResendEmail}
-                  gradient="primary"
-                  loading={resending}
-                  icon={<RefreshCw className="w-4 h-4" />}
+                  gradient="accent"
+                  size="lg"
+                  className="w-full"
                 >
-                  Resend
+                  Register Again
                 </GradientButton>
-              </div>
-
-              <Link
-                to={ROUTES.REGISTER}
-                className="block text-primary-400 hover:text-primary-300 text-sm transition-colors"
-              >
-                Register a new account
+              </Link>
+              <Link to={ROUTES.LOGIN} className="flex-1">
+                <GradientButton
+                  gradient="primary"
+                  size="lg"
+                  className="w-full"
+                >
+                  Back to Login
+                </GradientButton>
               </Link>
             </div>
           </motion.div>
@@ -322,21 +304,48 @@ export const VerifyEmailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-teal/10 rounded-full blur-3xl animate-pulse-slow animation-delay-2000" />
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-neutral-50 dark:bg-neutral-900 p-6">
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-6 right-6 z-50">
+        <ThemeToggle />
       </div>
+
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-100 via-purple-50 to-accent-teal/10 dark:from-primary-900 dark:via-purple-900 dark:to-accent-teal/20 opacity-50">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii4wNSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9nPjwvc3ZnPg==')] opacity-20" />
+      </div>
+
+      {/* Floating Particles */}
+      {particles.map((particle) => (
+        <motion.div
+          key={particle.id}
+          className="absolute rounded-full bg-white/20 dark:bg-primary-400/20"
+          style={{
+            width: particle.size,
+            height: particle.size,
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.5, 0.2],
+          }}
+          transition={{
+            duration: particle.duration,
+            repeat: Infinity,
+            delay: particle.delay,
+          }}
+        />
+      ))}
 
       {/* Content Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full max-w-lg"
+        className="w-full max-w-md relative z-10"
       >
-        <div className="card-glass p-8 md:p-12 backdrop-blur-xl shadow-3d-xl border border-white/10">
+        <div className="bg-white/90 dark:bg-neutral-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-neutral-200 dark:border-white/20 p-8 sm:p-10">
           {renderContent()}
         </div>
 
@@ -344,18 +353,16 @@ export const VerifyEmailPage = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center mt-6"
+          transition={{ delay: 0.6 }}
+          className="mt-8 flex items-center justify-center gap-3"
         >
-          <p className="text-neutral-400 text-sm">
-            Need help?{' '}
-            <a
-              href="#"
-              className="text-primary-400 hover:text-primary-300 transition-colors font-medium"
-            >
-              Contact Support
-            </a>
-          </p>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center">
+            <Package className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-left">
+            <h3 className="font-bold text-neutral-800 dark:text-white">StockFlow</h3>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">Management System</p>
+          </div>
         </motion.div>
       </motion.div>
     </div>

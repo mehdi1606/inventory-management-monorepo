@@ -15,6 +15,8 @@ import {
   CheckCircle,
   Menu,
   X,
+  List,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -29,17 +31,22 @@ const navigation = [
   // Inventory Section
   { name: 'Lots', href: '/inventory/lots', icon: Box },
   { name: 'Serials', href: '/inventory/serials', icon: Barcode },
+  { name: 'Inventory', href: '/inventory/Inventories', icon: Boxes },
   
   // Locations Section
   { name: 'Sites', href: '/locations/sites', icon: Map },
   { name: 'Warehouses', href: '/locations/warehouses', icon: Building2 },
   { name: 'Locations', href: '/locations/locations', icon: MapPin },
   
-  // Movements
+  // Movements Section
   { name: 'Movements', href: '/movements', icon: Move },
+  { name: 'Movement Lines', href: '/movements/lines', icon: List },
+  { name: 'Movement Tasks', href: '/movements/tasks', icon: ClipboardCheck },
   
   // Quality
-  { name: 'Quality Control', href: '/quality', icon: CheckCircle },
+    { name: 'Quality Controls', href: '/quality/controls', icon: CheckCircle },
+   
+
 ];
 
 export const Sidebar = () => {

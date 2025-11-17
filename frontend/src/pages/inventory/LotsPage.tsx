@@ -1,41 +1,50 @@
-// src/pages/inventory/LotsPage.tsx
-
-import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, AlertCircle, Calendar } from 'lucide-react';
+// frontend/src/pages/inventory/LotsPage.tsx - CORRECTED VERSION
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Edit, Trash2, Eye, Calendar, AlertCircle, Package } from 'lucide-react';
 import { inventoryService } from '@/services/inventory.service';
-import { Lot } from '@/types';
+import { productService } from '@/services/product.service';
+import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { LotFormModal } from '@/components/lots/LotFormModal';
-import { LotDetailModal } from '@/components/lots/LotDetailModal';
 import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog';
-import { toast } from 'react-hot-toast';
-import { format, differenceInDays } from 'date-fns';
 
-export const LotsPage = () => {
+interface Lot {
+  id: string;
+  code: string;
+  itemId: string;
+  lotNumber: string;
+  expiryDate?: string;
+  manufactureDate?: string;
+  supplierId?: string;
+  status: string;
+  attributes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const LotsPage: React.FC = () => {
   const [lots, setLots] = useState<Lot[]>([]);
-  const [filteredLots, setFilteredLots] = useState<Lot[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterExpiry, setFilterExpiry] = useState('');
-
-  // Modal states
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
 
-  // Fetch lots
+  // Modals
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  useEffect(() => {
+    fetchLots();
+  }, []);
+
   const fetchLots = async () => {
     setLoading(true);
     try {
       const data = await inventoryService.getLots();
-      setLots(data);
-      setFilteredLots(data);
-    } catch (error) {
+      setLots(Array.isArray(data) ? data : []);
+    } catch (error: any) {
       toast.error('Failed to fetch lots');
       console.error(error);
     } finally {
@@ -43,70 +52,6 @@ export const LotsPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchLots();
-  }, []);
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = lots;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (lot) =>
-          lot.lotNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          lot.itemId?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (filterStatus) {
-      filtered = filtered.filter((lot) => lot.status === filterStatus);
-    }
-
-    // Expiry filter
-    if (filterExpiry) {
-      const today = new Date();
-      filtered = filtered.filter((lot) => {
-        if (!lot.expiryDate) return false;
-        const expiryDate = new Date(lot.expiryDate);
-        const daysUntilExpiry = differenceInDays(expiryDate, today);
-
-        switch (filterExpiry) {
-          case 'expired':
-            return daysUntilExpiry < 0;
-          case 'expiring-soon':
-            return daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
-          case 'valid':
-            return daysUntilExpiry > 30;
-          default:
-            return true;
-        }
-      });
-    }
-
-    setFilteredLots(filtered);
-  }, [searchTerm, filterStatus, filterExpiry, lots]);
-
-  // Calculate expiry status
-  const getExpiryStatus = (expiryDate: string | undefined) => {
-    if (!expiryDate) return { text: 'No expiry', color: 'gray' };
-    
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const daysUntilExpiry = differenceInDays(expiry, today);
-
-    if (daysUntilExpiry < 0) {
-      return { text: 'Expired', color: 'red' };
-    } else if (daysUntilExpiry <= 30) {
-      return { text: `${daysUntilExpiry} days left`, color: 'yellow' };
-    } else {
-      return { text: format(expiry, 'MMM dd, yyyy'), color: 'green' };
-    }
-  };
-
-  // Handlers
   const handleCreate = () => {
     setSelectedLot(null);
     setIsCreateModalOpen(true);
@@ -115,11 +60,6 @@ export const LotsPage = () => {
   const handleEdit = (lot: Lot) => {
     setSelectedLot(lot);
     setIsEditModalOpen(true);
-  };
-
-  const handleView = (lot: Lot) => {
-    setSelectedLot(lot);
-    setIsDetailModalOpen(true);
   };
 
   const handleDelete = (lot: Lot) => {
@@ -134,10 +74,11 @@ export const LotsPage = () => {
       await inventoryService.deleteLot(selectedLot.id);
       toast.success('Lot deleted successfully');
       fetchLots();
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Failed to delete lot');
-      console.error(error);
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setSelectedLot(null);
     }
   };
 
@@ -145,6 +86,25 @@ export const LotsPage = () => {
     fetchLots();
     setIsCreateModalOpen(false);
     setIsEditModalOpen(false);
+    setSelectedLot(null);
+  };
+
+  const filteredLots = lots.filter((lot) => {
+    const matchesSearch =
+      searchTerm === '' ||
+      lot.lotNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lot.code?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = filterStatus === '' || lot.status === filterStatus;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const stats = {
+    total: lots.length,
+    active: lots.filter((l) => l.status === 'ACTIVE').length,
+    quarantined: lots.filter((l) => l.status === 'QUARANTINED').length,
+    expired: lots.filter((l) => l.status === 'EXPIRED').length,
   };
 
   return (
@@ -153,7 +113,7 @@ export const LotsPage = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Lot Management</h1>
-          <p className="text-gray-600 mt-1">Track and manage product lots</p>
+          <p className="text-gray-600 mt-1">Track and manage product batches</p>
         </div>
         <Button onClick={handleCreate} className="flex items-center gap-2">
           <Plus size={20} />
@@ -163,37 +123,23 @@ export const LotsPage = () => {
 
       {/* Search & Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <Input
               type="text"
-              placeholder="Search lots..."
+              placeholder="Search by lot number or code..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          <Select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full"
-          >
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full">
             <option value="">All Status</option>
             <option value="ACTIVE">Active</option>
+            <option value="QUARANTINED">Quarantined</option>
             <option value="EXPIRED">Expired</option>
-            <option value="QUARANTINE">Quarantine</option>
-            <option value="CONSUMED">Consumed</option>
-          </Select>
-          <Select
-            value={filterExpiry}
-            onChange={(e) => setFilterExpiry(e.target.value)}
-            className="w-full"
-          >
-            <option value="">All Expiry Status</option>
-            <option value="expired">Expired</option>
-            <option value="expiring-soon">Expiring Soon (30 days)</option>
-            <option value="valid">Valid</option>
+            <option value="RECALLED">Recalled</option>
           </Select>
         </div>
       </div>
@@ -204,18 +150,16 @@ export const LotsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Lots</p>
-              <p className="text-2xl font-bold text-gray-900">{lots.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
-            <Calendar className="text-blue-500" size={32} />
+            <Package className="text-blue-500" size={32} />
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-green-600">
-                {lots.filter((l) => l.status === 'ACTIVE').length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{stats.active}</p>
             </div>
             <Calendar className="text-green-500" size={32} />
           </div>
@@ -223,16 +167,8 @@ export const LotsPage = () => {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Expiring Soon</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {
-                  lots.filter((lot) => {
-                    if (!lot.expiryDate) return false;
-                    const days = differenceInDays(new Date(lot.expiryDate), new Date());
-                    return days >= 0 && days <= 30;
-                  }).length
-                }
-              </p>
+              <p className="text-sm text-gray-600">Quarantined</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.quarantined}</p>
             </div>
             <AlertCircle className="text-yellow-500" size={32} />
           </div>
@@ -241,14 +177,7 @@ export const LotsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Expired</p>
-              <p className="text-2xl font-bold text-red-600">
-                {
-                  lots.filter((lot) => {
-                    if (!lot.expiryDate) return false;
-                    return differenceInDays(new Date(lot.expiryDate), new Date()) < 0;
-                  }).length
-                }
-              </p>
+              <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
             </div>
             <AlertCircle className="text-red-500" size={32} />
           </div>
@@ -266,108 +195,69 @@ export const LotsPage = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Lot Number
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Item
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Manufacture Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expiry Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot Number</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacture</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredLots.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                       No lots found
                     </td>
                   </tr>
                 ) : (
-                  filteredLots.map((lot) => {
-                    const expiryStatus = getExpiryStatus(lot.expiryDate);
-                    return (
-                      <tr key={lot.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{lot.lotNumber}</div>
-                          <div className="text-sm text-gray-500">{lot.code}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{lot.itemId}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {lot.manufactureDate
-                              ? format(new Date(lot.manufactureDate), 'MMM dd, yyyy')
-                              : '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div
-                            className={`text-sm font-medium ${
-                              expiryStatus.color === 'red'
-                                ? 'text-red-600'
-                                : expiryStatus.color === 'yellow'
-                                ? 'text-yellow-600'
-                                : 'text-green-600'
-                            }`}
+                  filteredLots.map((lot) => (
+                    <tr key={lot.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lot.code}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lot.lotNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lot.itemId}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {lot.manufactureDate || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {lot.expiryDate || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            lot.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800'
+                              : lot.status === 'QUARANTINED'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : lot.status === 'EXPIRED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {lot.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(lot)}
+                            className="text-yellow-600 hover:text-yellow-900"
+                            title="Edit"
                           >
-                            {expiryStatus.text}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              lot.status === 'ACTIVE'
-                                ? 'bg-green-100 text-green-800'
-                                : lot.status === 'EXPIRED'
-                                ? 'bg-red-100 text-red-800'
-                                : lot.status === 'QUARANTINE'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(lot)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete"
                           >
-                            {lot.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => handleView(lot)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="View"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleEdit(lot)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Edit"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(lot)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -375,39 +265,300 @@ export const LotsPage = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Create Modal */}
       <LotFormModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setSelectedLot(null);
+        }}
         onSuccess={handleFormSuccess}
         mode="create"
       />
 
+      {/* Edit Modal */}
       <LotFormModal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedLot(null);
+        }}
         onSuccess={handleFormSuccess}
         mode="edit"
         lot={selectedLot}
       />
 
-      <LotDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        lot={selectedLot}
-        onEdit={() => {
-          setIsDetailModalOpen(false);
-          setIsEditModalOpen(true);
-        }}
-      />
-
+      {/* Delete Dialog */}
       <DeleteConfirmDialog
         isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedLot(null);
+        }}
         onConfirm={confirmDelete}
         title="Delete Lot"
         message={`Are you sure you want to delete lot "${selectedLot?.lotNumber}"? This action cannot be undone.`}
       />
+    </div>
+  );
+};
+
+// ============================================================================
+// LOT FORM MODAL COMPONENT
+// ============================================================================
+
+interface LotFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  mode: 'create' | 'edit';
+  lot?: Lot | null;
+}
+
+const LotFormModal: React.FC<LotFormModalProps> = ({ isOpen, onClose, onSuccess, mode, lot }) => {
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<any[]>([]);
+
+  // Form data matching backend DTOs
+  const [formData, setFormData] = useState({
+    code: '',
+    itemId: '',
+    lotNumber: '',
+    expiryDate: '',
+    manufactureDate: '',
+    supplierId: '',
+    status: 'ACTIVE',
+    attributes: '',
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchItems();
+
+      if (mode === 'edit' && lot) {
+        // EDIT MODE
+        setFormData({
+          code: lot.code || '',
+          itemId: lot.itemId || '',
+          lotNumber: lot.lotNumber || '',
+          expiryDate: lot.expiryDate || '',
+          manufactureDate: lot.manufactureDate || '',
+          supplierId: lot.supplierId || '',
+          status: lot.status || 'ACTIVE',
+          attributes: lot.attributes || '',
+        });
+      } else {
+        // CREATE MODE
+        setFormData({
+          code: '',
+          itemId: '',
+          lotNumber: '',
+          expiryDate: '',
+          manufactureDate: '',
+          supplierId: '',
+          status: 'ACTIVE',
+          attributes: '',
+        });
+      }
+    }
+  }, [isOpen, mode, lot]);
+
+  const fetchItems = async () => {
+    try {
+      const response = await productService.getItems();
+      setItems(Array.isArray(response) ? response : response?.content || []);
+    } catch (error) {
+      console.error('Failed to fetch items:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (mode === 'create') {
+        // CREATE REQUEST - Match LotCreateRequest DTO
+        const createRequest = {
+          code: formData.code,
+          itemId: formData.itemId,
+          lotNumber: formData.lotNumber,
+          expiryDate: formData.expiryDate || null,
+          manufactureDate: formData.manufactureDate || null,
+          supplierId: formData.supplierId || null,
+          status: formData.status,
+          attributes: formData.attributes || null,
+        };
+
+        await inventoryService.createLot(createRequest);
+        toast.success('Lot created successfully');
+      } else {
+        // UPDATE REQUEST - Match LotUpdateRequest DTO
+        const updateRequest = {
+          lotNumber: formData.lotNumber,
+          expiryDate: formData.expiryDate || null,
+          manufactureDate: formData.manufactureDate || null,
+          supplierId: formData.supplierId || null,
+          status: formData.status,
+          attributes: formData.attributes || null,
+        };
+
+        await inventoryService.updateLot(lot!.id, updateRequest);
+        toast.success('Lot updated successfully');
+      }
+
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Operation failed';
+      toast.error(errorMessage);
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-6 border-b">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {mode === 'edit' ? 'Edit Lot' : 'Create Lot'}
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Code - Required */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Code <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                required
+                maxLength={100}
+                placeholder="LOT-2024-001"
+                disabled={mode === 'edit'}
+              />
+            </div>
+
+            {/* Item - Required */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Item <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.itemId}
+                onChange={(e) => setFormData({ ...formData, itemId: e.target.value })}
+                required
+                disabled={mode === 'edit'}
+              >
+                <option value="">Select an item</option>
+                {items.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} ({item.sku})
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Lot Number - Required */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lot Number <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                value={formData.lotNumber}
+                onChange={(e) => setFormData({ ...formData, lotNumber: e.target.value })}
+                required
+                maxLength={100}
+                placeholder="BATCH-ABC-123"
+              />
+            </div>
+
+            {/* Status - Required */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                required
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="QUARANTINED">Quarantined</option>
+                <option value="EXPIRED">Expired</option>
+                <option value="RECALLED">Recalled</option>
+              </Select>
+            </div>
+
+            {/* Manufacture Date - Optional, must be past */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Manufacture Date (Past)</label>
+              <Input
+                type="date"
+                value={formData.manufactureDate}
+                onChange={(e) => setFormData({ ...formData, manufactureDate: e.target.value })}
+              />
+            </div>
+
+            {/* Expiry Date - Optional, must be future */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date (Future)</label>
+              <Input
+                type="date"
+                value={formData.expiryDate}
+                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+              />
+            </div>
+
+            {/* Supplier ID - Optional */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Supplier ID</label>
+              <Input
+                type="text"
+                value={formData.supplierId}
+                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+                placeholder="Supplier UUID"
+              />
+            </div>
+
+            {/* Attributes (JSON) */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Attributes (JSON)</label>
+              <textarea
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={formData.attributes}
+                onChange={(e) => setFormData({ ...formData, attributes: e.target.value })}
+                rows={3}
+                placeholder='{"temperature": "cold", "storage": "A1"}'
+              />
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 mt-6 pt-6 border-t">
+            <Button type="button" onClick={onClose} variant="outline" disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Saving...' : mode === 'edit' ? 'Update Lot' : 'Create Lot'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

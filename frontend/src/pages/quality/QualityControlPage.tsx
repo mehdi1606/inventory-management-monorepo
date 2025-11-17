@@ -34,11 +34,16 @@ export const QualityControlsPage = () => {
     setLoading(true);
     try {
       const data = await qualityService.getQualityControls();
-      setQualityControls(data);
-      setFilteredQualityControls(data);
+      // Handle paginated response - extract content array
+      const controls = Array.isArray(data) ? data : (data?.content || []);
+      setQualityControls(controls);
+      setFilteredQualityControls(controls);
     } catch (error) {
       toast.error('Failed to fetch quality controls');
       console.error(error);
+      // Set empty arrays on error to prevent filter errors
+      setQualityControls([]);
+      setFilteredQualityControls([]);
     } finally {
       setLoading(false);
     }
@@ -50,7 +55,8 @@ export const QualityControlsPage = () => {
 
   // Apply filters
   useEffect(() => {
-    let filtered = qualityControls;
+    // Ensure qualityControls is always an array
+    let filtered = Array.isArray(qualityControls) ? qualityControls : [];
 
     // Search filter
     if (searchTerm) {
@@ -130,45 +136,42 @@ export const QualityControlsPage = () => {
     try {
       await qualityService.deleteQualityControl(selectedQC.id);
       toast.success('Quality control deleted successfully');
-      fetchQualityControls();
       setIsDeleteDialogOpen(false);
+      fetchQualityControls();
     } catch (error) {
       toast.error('Failed to delete quality control');
       console.error(error);
     }
   };
 
-  const handleFormSuccess = () => {
-    fetchQualityControls();
-    setIsCreateModalOpen(false);
-    setIsEditModalOpen(false);
-  };
-
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'PASSED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'FAILED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'COMPLETED':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
+
+  // Safe array access for stats
+  const safeQualityControls = Array.isArray(qualityControls) ? qualityControls : [];
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quality Control Inspections</h1>
-          <p className="text-gray-600 mt-1">Manage quality inspections and testing</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Quality Controls</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage quality control inspections</p>
         </div>
         <Button onClick={handleCreate} className="flex items-center gap-2">
           <Plus size={20} />
@@ -176,14 +179,14 @@ export const QualityControlsPage = () => {
         </Button>
       </div>
 
-      {/* Search & Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      {/* Search and Filters */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
             <Input
               type="text"
-              placeholder="Search inspections..."
+              placeholder="Search by control # or item..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -227,159 +230,157 @@ export const QualityControlsPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Inspections</p>
-              <p className="text-2xl font-bold text-gray-900">{qualityControls.length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Inspections</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{safeQualityControls.length}</p>
             </div>
-            <ClipboardCheck className="text-blue-500" size={32} />
+            <ClipboardCheck className="text-blue-500 dark:text-blue-400" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {qualityControls.filter((qc) => qc.status === 'PENDING').length}
+              <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {safeQualityControls.filter((qc) => qc.status === 'PENDING').length}
               </p>
             </div>
-            <ClipboardCheck className="text-yellow-500" size={32} />
+            <ClipboardCheck className="text-yellow-500 dark:text-yellow-400" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {qualityControls.filter((qc) => qc.status === 'IN_PROGRESS').length}
+              <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {safeQualityControls.filter((qc) => qc.status === 'IN_PROGRESS').length}
               </p>
             </div>
-            <ClipboardCheck className="text-blue-500" size={32} />
+            <ClipboardCheck className="text-blue-500 dark:text-blue-400" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Passed</p>
-              <p className="text-2xl font-bold text-green-600">
-                {qualityControls.filter((qc) => qc.passed === true).length}
+              <p className="text-sm text-gray-600 dark:text-gray-400">Passed</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {safeQualityControls.filter((qc) => qc.passed === true).length}
               </p>
             </div>
-            <CheckCircle className="text-green-500" size={32} />
+            <CheckCircle className="text-green-500 dark:text-green-400" size={32} />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Failed</p>
-              <p className="text-2xl font-bold text-red-600">
-                {qualityControls.filter((qc) => qc.passed === false).length}
+              <p className="text-sm text-gray-600 dark:text-gray-400">Failed</p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {safeQualityControls.filter((qc) => qc.passed === false).length}
               </p>
             </div>
-            <XCircle className="text-red-500" size={32} />
+            <XCircle className="text-red-500 dark:text-red-400" size={32} />
           </div>
         </div>
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Control #
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Item
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Lot/Serial
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Inspector
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tested Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Result
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredQualityControls.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                       No quality controls found
                     </td>
                   </tr>
                 ) : (
                   filteredQualityControls.map((qc) => (
-                    <tr key={qc.id} className="hover:bg-gray-50">
+                    <tr key={qc.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <ClipboardCheck className="text-gray-400 mr-2" size={16} />
-                          <div className="text-sm font-medium text-gray-900">
+                          <ClipboardCheck className="text-gray-400 dark:text-gray-500 mr-2" size={16} />
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {qc.controlNumber || qc.id.slice(0, 8)}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {qc.item?.name || qc.itemId}
                         </div>
-                        <div className="text-sm text-gray-500">{qc.item?.sku || '-'}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{qc.item?.sku || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                           {qc.inspectionType || 'GENERAL'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {qc.lot?.lotNumber || qc.serial?.serialNumber || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{qc.testedBy || '-'}</div>
+                        <div className="text-sm text-gray-900 dark:text-white">{qc.testedBy || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {qc.testedDate ? format(new Date(qc.testedDate), 'MMM dd, yyyy') : '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {qc.passed === true && (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            <CheckCircle size={14} className="mr-1" />
-                            PASSED
+                          <span className="flex items-center text-green-600 dark:text-green-400">
+                            <CheckCircle size={16} className="mr-1" />
+                            Passed
                           </span>
                         )}
                         {qc.passed === false && (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            <XCircle size={14} className="mr-1" />
-                            FAILED
+                          <span className="flex items-center text-red-600 dark:text-red-400">
+                            <XCircle size={16} className="mr-1" />
+                            Failed
                           </span>
                         )}
-                        {qc.passed === null && (
-                          <span className="text-sm text-gray-400 italic">Pending</span>
-                        )}
+                        {qc.passed === null && <span className="text-gray-400 dark:text-gray-500">Pending</span>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(qc.status)}`}>
@@ -387,44 +388,33 @@ export const QualityControlsPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end space-x-2">
                           <button
                             onClick={() => handleView(qc)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="View"
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            title="View Details"
                           >
                             <Eye size={18} />
                           </button>
-                          {qc.status === 'IN_PROGRESS' && (
-                            <>
-                              <button
-                                onClick={() => handleApprove(qc)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Approve/Pass"
-                              >
-                                <CheckCircle size={18} />
-                              </button>
-                              <button
-                                onClick={() => handleReject(qc)}
-                                className="text-red-600 hover:text-red-900"
-                                title="Reject/Fail"
-                              >
-                                <XCircle size={18} />
-                              </button>
-                            </>
-                          )}
-                          {(qc.status === 'PENDING' || qc.status === 'IN_PROGRESS') && (
+                          <button
+                            onClick={() => handleEdit(qc)}
+                            className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          {qc.status === 'PASSED' && !qc.approvedAt && (
                             <button
-                              onClick={() => handleEdit(qc)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Edit"
+                              onClick={() => handleApprove(qc)}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                              title="Approve"
                             >
-                              <Edit size={18} />
+                              <CheckCircle size={18} />
                             </button>
                           )}
                           <button
                             onClick={() => handleDelete(qc)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                             title="Delete"
                           >
                             <Trash2 size={18} />
@@ -441,38 +431,40 @@ export const QualityControlsPage = () => {
       </div>
 
       {/* Modals */}
-      <QualityControlFormModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleFormSuccess}
-        mode="create"
-      />
+      {isCreateModalOpen && (
+        <QualityControlFormModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={fetchQualityControls}
+        />
+      )}
 
-      <QualityControlFormModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={handleFormSuccess}
-        mode="edit"
-        qualityControl={selectedQC}
-      />
+      {isEditModalOpen && selectedQC && (
+        <QualityControlFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={fetchQualityControls}
+          qualityControl={selectedQC}
+        />
+      )}
 
-      <QualityControlDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        qualityControl={selectedQC}
-        onEdit={() => {
-          setIsDetailModalOpen(false);
-          setIsEditModalOpen(true);
-        }}
-      />
+      {isDetailModalOpen && selectedQC && (
+        <QualityControlDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          qualityControl={selectedQC}
+        />
+      )}
 
-      <DeleteConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={confirmDelete}
-        title="Delete Quality Control"
-        message={`Are you sure you want to delete quality control "${selectedQC?.controlNumber}"? This action cannot be undone.`}
-      />
+      {isDeleteDialogOpen && selectedQC && (
+        <DeleteConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={confirmDelete}
+          title="Delete Quality Control"
+          message={`Are you sure you want to delete quality control "${selectedQC.controlNumber || selectedQC.id.slice(0, 8)}"? This action cannot be undone.`}
+        />
+      )}
     </div>
   );
 };

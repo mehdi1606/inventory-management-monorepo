@@ -24,6 +24,7 @@ import { CategoriesPage } from '@/pages/products/CategoriesPage';
 // Inventory Pages
 import { LotsPage } from '@/pages/inventory/LotsPage';
 import { SerialsPage } from '@/pages/inventory/SerialsPage';
+import { InventoryPage } from '@/pages/inventory/InventoryPage';
 
 // Locations Pages
 import { SitesPage } from '@/pages/locations/SitesPage';
@@ -32,9 +33,14 @@ import { LocationsPage } from '@/pages/locations/LocationsPage';
 
 // Movements Pages
 import { MovementsPage } from '@/pages/movements/MovementsPage';
+import { MovementLinesPage } from '@/pages/movements/MovementLinesPage';
+import { MovementTasksPage } from '@/pages/movements/MovementTasksPage';
+
 
 // Quality Pages
-import { QualityControlsPage } from '@/pages/quality/QualityPage';
+import { QualityControlsPage } from '@/pages/quality/QualityControlPage';
+import { QualityAttachmentsPage } from './pages/quality/QualityAttachmentsPage';
+import { QuarantinesPage } from './pages/quality/QuarantinesPage';
 
 // Protected Route Component - FIXED VERSION
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -166,7 +172,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+ <Route
+          path="/inventory/Inventories"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <InventoryPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* Locations Routes */}
         <Route
           path="/locations/sites"
@@ -212,14 +227,55 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+     path="/movements/lines"
+     element={
+       <ProtectedRoute>
+         <MainLayout>
+           <MovementLinesPage />
+         </MainLayout>
+       </ProtectedRoute>
+     }
+   />
+
+   <Route
+     path="/movements/tasks"
+     element={
+       <ProtectedRoute>
+         <MainLayout>
+           <MovementTasksPage />
+         </MainLayout>
+       </ProtectedRoute>
+     }
+   />
 
         {/* Quality Routes */}
         <Route
-          path="/quality"
+          path="/quality/controls"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <QualityControlsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quality/attachments"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <QualityAttachmentsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quality/quarantines"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <QuarantinesPage />
               </MainLayout>
             </ProtectedRoute>
           }
