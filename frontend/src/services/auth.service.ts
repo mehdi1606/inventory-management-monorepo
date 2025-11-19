@@ -28,7 +28,9 @@ export const authService = {
     storage.set(STORAGE_KEYS.ACCESS_TOKEN, response.data.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, response.data.refreshToken);
     storage.set(STORAGE_KEYS.USER, response.data.user);
-    
+    localStorage.setItem('user', JSON.stringify(response.data.user)); // ← Important!
+
+
     return response.data;
   },
 

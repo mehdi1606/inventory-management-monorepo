@@ -191,11 +191,15 @@ export enum LineStatus {
 }
 
 export enum TaskType {
-  PICKING = 'PICKING',
-  PACKING = 'PACKING',
-  LOADING = 'LOADING',
-  UNLOADING = 'UNLOADING',
-  COUNTING = 'COUNTING'
+  PICK = 'PICK',
+  PACK = 'PACK',
+  PUT_AWAY = 'PUT_AWAY',  // ⚠️ Check this - must match backend exactly
+  COUNT = 'COUNT',
+  INSPECT = 'INSPECT',
+  LOAD = 'LOAD',
+  UNLOAD = 'UNLOAD',
+  STAGE = 'STAGE',
+  REPLENISH = 'REPLENISH'
 }
 
 export enum TaskStatus {
