@@ -21,22 +21,25 @@ export const movementService = {
     return response.data;
   },
 
-  createMovement: async (data: Partial<Movement>): Promise<ApiResponse<Movement>> => {
-    const user = storage.get<any>(STORAGE_KEYS.USER);
-    const userId = user?.id || user?.userId;
-    
-    const headers: any = {};
-    if (userId) {
-      headers['X-User-Id'] = userId;
-    }
-    
-    const response = await apiClient.post<ApiResponse<Movement>>(
-      API_ENDPOINTS.MOVEMENTS.MOVEMENTS, 
-      data,
-      { headers }
-    );
-    return response.data;
-  },
+    createMovement: async (data: Partial<Movement>): Promise<ApiResponse<Movement>> => {
+      const user = storage.get<any>(STORAGE_KEYS.USER);
+      const userId = user?.id || user?.userId;
+      
+      console.log('🚀 Creating movement with user ID:', userId);
+      console.log('📦 Movement data:', data);
+      
+      const headers: any = {};
+      if (userId) {
+        headers['X-User-Id'] = userId;
+      }
+      
+      const response = await apiClient.post<ApiResponse<Movement>>(
+        API_ENDPOINTS.MOVEMENTS.MOVEMENTS, 
+        data,
+        { headers }
+      );
+      return response.data;
+    },
 
   updateMovement: async (id: string, data: Partial<Movement>): Promise<ApiResponse<Movement>> => {
     const user = storage.get<any>(STORAGE_KEYS.USER);
