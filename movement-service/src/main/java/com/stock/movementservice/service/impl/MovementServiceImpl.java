@@ -89,13 +89,16 @@ public class MovementServiceImpl implements MovementService {
     @Transactional(readOnly = true)
     public MovementResponseDto getMovementById(UUID id) {
         log.info("Fetching movement with ID: {}", id);
-
-        Movement movement = movementRepository.findByIdWithLinesAndTasks(id)
+    
+        // First fetch with lines
+        Movement movement = movementRepository.findByIdWithLines(id)
                 .orElseThrow(() -> new MovementNotFoundException(id));
-
+    
+        // Then fetch with tasks (Hibernate will merge into the same entity)
+        movementRepository.findByIdWithTasks(id);
+    
         return movementMapper.toResponseDto(movement);
     }
-
     @Override
     @Transactional(readOnly = true)
     public MovementResponseDto getMovementByReferenceNumber(String referenceNumber) {

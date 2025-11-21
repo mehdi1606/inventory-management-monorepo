@@ -33,8 +33,8 @@ import { LocationsPage } from '@/pages/locations/LocationsPage';
 
 // Movements Pages
 import MovementsPage from '@/pages/movements/MovementsPage';
-import { MovementLinesPage } from '@/pages/movements/MovementLinesPage';
-import { MovementTasksPage } from '@/pages/movements/MovementTasksPage';
+// import { MovementLinesPage } from '@/pages/movements/MovementLinesPage';
+// import { MovementTasksPage } from '@/pages/movements/MovementTasksPage';
 
 
 // Quality Pages
@@ -227,7 +227,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
      path="/movements/lines"
      element={
        <ProtectedRoute>
@@ -247,7 +247,7 @@ function App() {
          </MainLayout>
        </ProtectedRoute>
      }
-   />
+   /> */}
 
         {/* Quality Routes */}
         <Route

@@ -170,10 +170,10 @@ public interface MovementRepository extends JpaRepository<Movement, UUID>,
      * Find movement by ID with lines and tasks
      */
     @Query("SELECT DISTINCT m FROM Movement m " +
-            "LEFT JOIN FETCH m.lines " +
-            "LEFT JOIN FETCH m.tasks " +
-            "WHERE m.id = :id")
-    Optional<Movement> findByIdWithLinesAndTasks(@Param("id") UUID id);
+    "LEFT JOIN FETCH m.lines " +
+    "LEFT JOIN FETCH m.tasks " +
+    "WHERE m.id = :id")
+Optional<Movement> findByIdWithLinesAndTasks(@Param("id") UUID id);
 
     // ===== Statistics and Aggregation Queries =====
 

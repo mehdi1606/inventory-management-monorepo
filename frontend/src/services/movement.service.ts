@@ -71,6 +71,10 @@ export const movementService = {
     return response.data;
   },
 
+  // ========================================
+  // MOVEMENT STATUS ACTIONS
+  // ========================================
+
   startMovement: async (id: string): Promise<ApiResponse<Movement>> => {
     const user = storage.get<any>(STORAGE_KEYS.USER);
     const userId = user?.id || user?.userId;
@@ -312,6 +316,10 @@ export const movementService = {
     );
     return response.data;
   },
+
+  // ========================================
+  // TASK STATUS ACTIONS
+  // ========================================
 
   assignTask: async (taskId: string, assignToUserId: string): Promise<ApiResponse<MovementTask>> => {
     const user = storage.get<any>(STORAGE_KEYS.USER);

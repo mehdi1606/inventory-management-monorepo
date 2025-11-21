@@ -1,6 +1,3 @@
-// src/components/movements/MovementFormModal.tsx
-// ✅ COMPLETE & PERFECT VERSION - All bugs fixed
-
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Package, ArrowRight, AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
 import { locationService } from '@/services/location.service';
