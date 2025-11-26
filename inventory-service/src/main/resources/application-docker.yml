@@ -59,6 +59,11 @@ spring:
           issuer-uri: http://auth-service:8083
           jwk-set-uri: http://auth-service:8083/.well-known/jwks.json
 
+# External Service URLs for Docker environment
+services:
+  location-service:
+    url: http://location-service:8085
+
 server:
   port: 8086
   error:

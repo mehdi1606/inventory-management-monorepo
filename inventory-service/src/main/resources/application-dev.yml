@@ -29,6 +29,11 @@ spring:
           issuer-uri: http://localhost:8083
           jwk-set-uri: http://localhost:8083/.well-known/jwks.json
 
+# External Service URLs for dev environment
+services:
+  location-service:
+    url: http://localhost:8085
+
 logging:
   level:
     com.stock.inventoryservice: DEBUG

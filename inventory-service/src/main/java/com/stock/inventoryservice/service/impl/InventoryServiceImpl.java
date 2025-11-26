@@ -1,7 +1,9 @@
 package com.stock.inventoryservice.service.impl;
 
+import com.stock.inventoryservice.client.LocationClient;
 import com.stock.inventoryservice.dto.*;
 import com.stock.inventoryservice.dto.cache.ItemCacheDTO;
+import com.stock.inventoryservice.dto.external.LocationResponseDTO;
 import com.stock.inventoryservice.dto.request.InventoryAdjustmentRequest;
 import com.stock.inventoryservice.dto.request.InventoryCreateRequest;
 import com.stock.inventoryservice.dto.request.InventoryTransferRequest;
@@ -10,6 +12,7 @@ import com.stock.inventoryservice.entity.Inventory;
 import com.stock.inventoryservice.entity.InventoryStatus;
 import com.stock.inventoryservice.event.dto.InventoryEvent;
 import com.stock.inventoryservice.exception.InsufficientStockException;
+import com.stock.inventoryservice.exception.LocationCapacityExceededException;
 import com.stock.inventoryservice.exception.ResourceNotFoundException;
 import com.stock.inventoryservice.repository.InventoryRepository;
 import com.stock.inventoryservice.service.InventoryService;
@@ -33,6 +36,7 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ItemCacheService itemCacheService;
     private final InventoryEventPublisher eventPublisher;
+    private final LocationClient locationClient; // 🔥 NEW: Inject LocationClient
 
     @Override
     public InventoryDTO createInventory(InventoryCreateRequest request) {
@@ -50,13 +54,18 @@ public class InventoryServiceImpl implements InventoryService {
                                     " at location: " + request.getLocationId());
                 });
 
+        Double quantityOnHand = request.getQuantityOnHand() != null ? request.getQuantityOnHand() : 0.0;
+
+        // 🔥 VALIDATE LOCATION CAPACITY BEFORE CREATING
+        validateLocationCapacity(request.getLocationId(), quantityOnHand, null);
+
         Inventory inventory = Inventory.builder()
                 .itemId(request.getItemId())
                 .warehouseId(request.getWarehouseId())
                 .locationId(request.getLocationId())
                 .lotId(request.getLotId())
                 .serialId(request.getSerialId())
-                .quantityOnHand(request.getQuantityOnHand() != null ? request.getQuantityOnHand() : 0.0)
+                .quantityOnHand(quantityOnHand)
                 .quantityReserved(request.getQuantityReserved() != null ? request.getQuantityReserved() : 0.0)
                 .quantityDamaged(request.getQuantityDamaged() != null ? request.getQuantityDamaged() : 0.0)
                 .uom(request.getUom())
@@ -174,6 +183,12 @@ public class InventoryServiceImpl implements InventoryService {
                     "Quantity cannot be negative. Requested: " + request.getNewQuantity());
         }
 
+        // 🔥 VALIDATE LOCATION CAPACITY IF INCREASING QUANTITY
+        if (request.getNewQuantity() > previousQuantity) {
+            Double additionalQuantity = request.getNewQuantity() - previousQuantity;
+            validateLocationCapacity(inventory.getLocationId(), additionalQuantity, id);
+        }
+
         inventory.setQuantityOnHand(request.getNewQuantity());
         inventory.setLastCountDate(LocalDate.now());
 
@@ -250,6 +265,9 @@ public class InventoryServiceImpl implements InventoryService {
         fromInventory.setQuantityOnHand(fromInventory.getQuantityOnHand() - request.getQuantity().doubleValue());
         inventoryRepository.save(fromInventory);
 
+        // 🔥 VALIDATE DESTINATION LOCATION CAPACITY
+        validateLocationCapacity(request.getDestinationLocationId(), request.getQuantity().doubleValue(), null);
+
         // Add to destination
         Inventory toInventory = inventoryRepository
                 .findByItemIdAndLocationId(request.getItemVariantId(), request.getDestinationLocationId())
@@ -278,6 +296,12 @@ public class InventoryServiceImpl implements InventoryService {
 
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + id));
+
+        // 🔥 VALIDATE LOCATION CAPACITY IF QUANTITY_ON_HAND IS BEING INCREASED
+        if (request.getQuantityOnHand() != null && request.getQuantityOnHand() > inventory.getQuantityOnHand()) {
+            Double additionalQuantity = request.getQuantityOnHand() - inventory.getQuantityOnHand();
+            validateLocationCapacity(inventory.getLocationId(), additionalQuantity, id);
+        }
 
         if (request.getQuantityOnHand() != null) {
             inventory.setQuantityOnHand(request.getQuantityOnHand());
@@ -375,6 +399,64 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     // ========== HELPER METHODS ==========
+
+    /**
+     * 🔥 VALIDATE LOCATION CAPACITY
+     * Checks if adding new quantity will exceed location capacity
+     * 
+     * @param locationId Location ID to check
+     * @param additionalQuantity Quantity to be added
+     * @param excludeInventoryId Inventory ID to exclude from current total (for updates)
+     */
+    private void validateLocationCapacity(String locationId, Double additionalQuantity, String excludeInventoryId) {
+        log.debug("Validating location capacity for location: {}, additional quantity: {}", 
+                locationId, additionalQuantity);
+
+        // Fetch location details from location-service
+        LocationResponseDTO location = locationClient.getLocationById(locationId);
+
+        if (location == null) {
+            throw new ResourceNotFoundException("Location not found with ID: " + locationId);
+        }
+
+        // Check if location is active
+        if (location.getIsActive() != null && !location.getIsActive()) {
+            throw new IllegalStateException("Cannot add inventory to inactive location: " + locationId);
+        }
+
+        // Get capacity as Double
+        Double locationCapacity = location.getCapacityAsDouble();
+
+        // If capacity is null or 0, skip validation (unlimited capacity)
+        if (locationCapacity == null || locationCapacity == 0) {
+            log.debug("Location {} has unlimited capacity, skipping validation", locationId);
+            return;
+        }
+
+        // Calculate current total quantity at this location
+        List<Inventory> existingInventories = inventoryRepository.findByLocationId(locationId);
+        
+        Double currentTotalQuantity = existingInventories.stream()
+                .filter(inv -> excludeInventoryId == null || !inv.getId().equals(excludeInventoryId))
+                .mapToDouble(Inventory::getQuantityOnHand)
+                .sum();
+
+        Double newTotalQuantity = currentTotalQuantity + additionalQuantity;
+
+        log.debug("Location {}: Capacity={}, Current={}, Additional={}, New Total={}", 
+                locationId, locationCapacity, currentTotalQuantity, additionalQuantity, newTotalQuantity);
+
+        // Check if new total exceeds capacity
+        if (newTotalQuantity > locationCapacity) {
+            throw new LocationCapacityExceededException(
+                    String.format("Location capacity exceeded! Location: %s [%s], Capacity: %.2f, Current: %.2f, " +
+                            "Attempting to add: %.2f, Would result in: %.2f",
+                            location.getCode(), locationId, locationCapacity, currentTotalQuantity, 
+                            additionalQuantity, newTotalQuantity));
+        }
+
+        log.info("✅ Location capacity validation passed for location: {}", locationId);
+    }
 
     private void publishInventoryEvent(Inventory inventory, String eventType) {
         InventoryEvent event = InventoryEvent.builder()

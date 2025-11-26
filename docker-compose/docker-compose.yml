@@ -68,7 +68,7 @@ services:
     environment:
       POSTGRES_DB: product_db
       POSTGRES_USER: product_user
-      POSTGRES_PASSWORD: product_password
+      POSTGRES_PASSWORD: product_pass
     ports:
       - "5432:5432"
     volumes:
@@ -87,7 +87,7 @@ services:
     environment:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: inventory_user
-      POSTGRES_PASSWORD: inventory_password
+      POSTGRES_PASSWORD: inventory_pass
     ports:
       - "5433:5432"
     volumes:
@@ -106,7 +106,7 @@ services:
     environment:
       POSTGRES_DB: movement_db
       POSTGRES_USER: movement_user
-      POSTGRES_PASSWORD: movement_password
+      POSTGRES_PASSWORD: movement_pass
     ports:
       - "5434:5432"
     volumes:
@@ -125,7 +125,7 @@ services:
     environment:
       POSTGRES_DB: location_db
       POSTGRES_USER: location_user
-      POSTGRES_PASSWORD: location_password
+      POSTGRES_PASSWORD: location_pass
     ports:
       - "5435:5432"
     volumes:
@@ -144,7 +144,7 @@ services:
     environment:
       POSTGRES_DB: quality_db
       POSTGRES_USER: quality_user
-      POSTGRES_PASSWORD: quality_password
+      POSTGRES_PASSWORD: quality_pass
     ports:
       - "5436:5432"
     volumes:
@@ -163,7 +163,7 @@ services:
     environment:
       POSTGRES_DB: user_db
       POSTGRES_USER: user_user
-      POSTGRES_PASSWORD: user_password
+      POSTGRES_PASSWORD: user_pass
     ports:
       - "5437:5432"
     volumes:
@@ -182,7 +182,7 @@ services:
     environment:
       POSTGRES_DB: alert_db
       POSTGRES_USER: alert_user
-      POSTGRES_PASSWORD: alert_password
+      POSTGRES_PASSWORD: alert_pass
     ports:
       - "5438:5432"
     volumes:
@@ -211,7 +211,32 @@ services:
       retries: 5
 
   # ================== SERVICES ==================
-
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      JWT_JWKS_URL: http://auth-service:8083/.well-known/jwks.json
+    networks:
+      - stock-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
   product-service:
     build:
       context: ../product-service
@@ -228,7 +253,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5432/product_db
       SPRING_DATASOURCE_USERNAME: product_user
-      SPRING_DATASOURCE_PASSWORD: product_password
+      SPRING_DATASOURCE_PASSWORD: product_pass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - stock-network
@@ -250,7 +275,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-location:5432/location_db
       SPRING_DATASOURCE_USERNAME: location_user
-      SPRING_DATASOURCE_PASSWORD: location_password
+      SPRING_DATASOURCE_PASSWORD: location_pass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - stock-network
@@ -274,7 +299,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5432/inventory_db
       SPRING_DATASOURCE_USERNAME: inventory_user
-      SPRING_DATASOURCE_PASSWORD: inventory_password
+      SPRING_DATASOURCE_PASSWORD: inventory_pass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
@@ -298,7 +323,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-movement:5432/movement_db
       SPRING_DATASOURCE_USERNAME: movement_user
-      SPRING_DATASOURCE_PASSWORD: movement_password
+      SPRING_DATASOURCE_PASSWORD: movement_pass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - stock-network
@@ -320,7 +345,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-quality:5432/quality_db
       SPRING_DATASOURCE_USERNAME: quality_user
-      SPRING_DATASOURCE_PASSWORD: quality_password
+      SPRING_DATASOURCE_PASSWORD: quality_pass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - stock-network
@@ -376,7 +401,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-alert:5432/alert_db
       SPRING_DATASOURCE_USERNAME: alert_user
-      SPRING_DATASOURCE_PASSWORD: alert_password
+      SPRING_DATASOURCE_PASSWORD: alert_pass
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - stock-network
