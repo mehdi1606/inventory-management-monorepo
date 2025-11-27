@@ -4,51 +4,54 @@ import com.stock.inventoryservice.dto.external.LocationResponseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-/**
- * Client to communicate with location-service
- */
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class LocationClient {
 
     private final WebClient webClient;
 
-    @Value("${services.location-service.url:http://localhost:8085}")
+    @Value("${services.location-service.url}")
     private String locationServiceUrl;
 
-    /**
-     * Fetch location details by ID
-     */
     public LocationResponseDTO getLocationById(String locationId) {
-        log.debug("Fetching location from location-service: {}", locationId);
-
         try {
+            log.info("🔍 Fetching location with ID: {}", locationId);
+            
+            // Get the JWT token from Security Context
+            String token = getJwtToken();
+            
             return webClient.get()
                     .uri(locationServiceUrl + "/api/locations/{id}", locationId)
+                    .header("Authorization", "Bearer " + token)  // 🔥 ADD JWT TOKEN!
                     .retrieve()
                     .bodyToMono(LocationResponseDTO.class)
-                    .block(); // Blocking call for simplicity
+                    .block();
+                    
         } catch (Exception e) {
-            log.error("Failed to fetch location with ID: {}", locationId, e);
+            log.error("❌ Failed to fetch location with ID: {}", locationId, e);
             throw new RuntimeException("Unable to fetch location details from location-service", e);
         }
     }
-
+    
     /**
-     * Fetch location details by ID (async version)
+     * Extract JWT token from Security Context
      */
-    public Mono<LocationResponseDTO> getLocationByIdAsync(String locationId) {
-        log.debug("Fetching location asynchronously from location-service: {}", locationId);
-
-        return webClient.get()
-                .uri(locationServiceUrl + "/api/locations/{id}", locationId)
-                .retrieve()
-                .bodyToMono(LocationResponseDTO.class)
-                .doOnError(e -> log.error("Failed to fetch location with ID: {}", locationId, e));
+    private String getJwtToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            return jwt.getTokenValue();
+        }
+        
+        log.warn("⚠️ No JWT token found in Security Context!");
+        return "";
     }
 }
