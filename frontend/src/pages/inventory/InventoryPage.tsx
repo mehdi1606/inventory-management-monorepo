@@ -915,7 +915,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
                 <option value="">Select Location</option>
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
-                    {loc.name}
+                    {loc.code}
                   </option>
                 ))}
               </Select>
