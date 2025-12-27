@@ -29,6 +29,30 @@ export const qualityService = {
     return response.data;
   },
 
+  // Quality Control Actions
+  updateQualityControlStatus: async (id: string, status: string): Promise<QualityControl> => {
+    const response = await apiClient.patch<QualityControl>(
+      `${API_ENDPOINTS.QUALITY.QUALITY_CONTROL_BY_ID(id)}/status`,
+      null,
+      { params: { status } }
+    );
+    return response.data;
+  },
+
+  approveQualityControl: async (id: string): Promise<QualityControl> => {
+    const response = await apiClient.patch<QualityControl>(`${API_ENDPOINTS.QUALITY.QUALITY_CONTROL_BY_ID(id)}/approve`);
+    return response.data;
+  },
+
+  rejectQualityControl: async (id: string, reason: string): Promise<QualityControl> => {
+    const response = await apiClient.patch<QualityControl>(
+      `${API_ENDPOINTS.QUALITY.QUALITY_CONTROL_BY_ID(id)}/reject`,
+      null,
+      { params: { reason } }
+    );
+    return response.data;
+  },
+
   // Quarantine
   getQuarantines: async (params?: PaginationParams): Promise<PaginatedResponse<Quarantine>> => {
     const response = await apiClient.get<PaginatedResponse<Quarantine>>(API_ENDPOINTS.QUALITY.QUARANTINE, { params });

@@ -382,23 +382,65 @@ export interface Location {
 }
 
 // Quality Types
+export enum QCStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  PASSED = 'PASSED',
+  FAILED = 'FAILED',
+  QUARANTINED = 'QUARANTINED',
+  CONDITIONAL_ACCEPT = 'CONDITIONAL_ACCEPT'
+}
+
+export enum QCType {
+  INCOMING = 'INCOMING',
+  IN_PROCESS = 'IN_PROCESS',
+  FINAL = 'FINAL',
+  SAMPLE = 'SAMPLE',
+  RECEIVING = 'RECEIVING'
+}
+
+export enum Disposition {
+  ACCEPT = 'ACCEPT',
+  REJECT = 'REJECT',
+  REWORK = 'REWORK',
+  SCRAP = 'SCRAP',
+  RETURN_TO_VENDOR = 'RETURN_TO_VENDOR',
+  USE_AS_IS = 'USE_AS_IS',
+  QUARANTINE = 'QUARANTINE'
+}
+
 export interface QualityControl {
   id: string;
-  controlNumber: string;
+  inspectionNumber: string;
   itemId: string;
   item?: Item;
   lotId?: string;
   lot?: Lot;
-  serialId?: string;
-  serial?: Serial;
-  status: string;
-  testResults?: Record<string, any>;
-  passed: boolean;
-  testedBy?: string;
-  testedDate?: string;
-  notes?: string;
+  serialNumber?: string;
+  quantityInspected: number;
+  inspectionType: QCType;
+  status: QCStatus;
+  qualityProfileId?: string;
+  samplingPlanId?: string;
+  inspectorId: string;
+  inspectionLocationId?: string;
+  scheduledDate?: string;
+  startTime?: string;
+  endTime?: string;
+  disposition?: Disposition;
+  passedQuantity?: number;
+  failedQuantity?: number;
+  defectCount?: number;
+  defectRate?: number;
+  inspectorNotes?: string;
+  correctiveAction?: string;
+  quarantineId?: string;
+  approvedBy?: string;
+  approvedAt?: string;
   createdAt: string;
   updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
 }
 
 export interface Quarantine {
