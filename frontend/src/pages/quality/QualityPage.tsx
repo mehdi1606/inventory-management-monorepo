@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, CheckCircle, XCircle, ClipboardCheck, AlertTriangle } from 'lucide-react';
 import { qualityService } from '@/services/quality.service';
-import { QualityControl } from '@/types';
+import { QualityControl, QCStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -56,7 +56,7 @@ export const QualityControlsPage = () => {
     if (searchTerm) {
       filtered = filtered.filter(
         (qc) =>
-          qc.controlNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          qc.inspectionNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           qc.itemId?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -68,9 +68,9 @@ export const QualityControlsPage = () => {
 
     // Result filter
     if (filterResult === 'passed') {
-      filtered = filtered.filter((qc) => qc.passed === true);
+      filtered = filtered.filter((qc) => qc.status === 'PASSED');
     } else if (filterResult === 'failed') {
-      filtered = filtered.filter((qc) => qc.passed === false);
+      filtered = filtered.filter((qc) => qc.status === 'FAILED');
     }
 
     // Type filter
@@ -250,20 +250,9 @@ export const QualityControlsPage = () => {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {qualityControls.filter((qc) => qc.status === 'IN_PROGRESS').length}
-              </p>
-            </div>
-            <ClipboardCheck className="text-blue-500" size={32} />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm text-gray-600">Passed</p>
               <p className="text-2xl font-bold text-green-600">
-                {qualityControls.filter((qc) => qc.passed === true).length}
+                {qualityControls.filter((qc) => qc.status === 'PASSED').length}
               </p>
             </div>
             <CheckCircle className="text-green-500" size={32} />
@@ -274,10 +263,21 @@ export const QualityControlsPage = () => {
             <div>
               <p className="text-sm text-gray-600">Failed</p>
               <p className="text-2xl font-bold text-red-600">
-                {qualityControls.filter((qc) => qc.passed === false).length}
+                {qualityControls.filter((qc) => qc.status === 'FAILED').length}
               </p>
             </div>
             <XCircle className="text-red-500" size={32} />
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">In Progress</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {qualityControls.filter((qc) => qc.status === 'IN_PROGRESS').length}
+              </p>
+            </div>
+            <ClipboardCheck className="text-blue-500" size={32} />
           </div>
         </div>
       </div>
@@ -336,7 +336,7 @@ export const QualityControlsPage = () => {
                         <div className="flex items-center">
                           <ClipboardCheck className="text-gray-400 mr-2" size={16} />
                           <div className="text-sm font-medium text-gray-900">
-                            {qc.controlNumber || qc.id.slice(0, 8)}
+                            {qc.inspectionNumber || qc.id.slice(0, 8)}
                           </div>
                         </div>
                       </td>
@@ -365,20 +365,20 @@ export const QualityControlsPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {qc.passed === true && (
+                        {qc.status === 'PASSED' && (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                             <CheckCircle size={14} className="mr-1" />
                             PASSED
                           </span>
                         )}
-                        {qc.passed === false && (
+                        {qc.status === 'FAILED' && (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                             <XCircle size={14} className="mr-1" />
                             FAILED
                           </span>
                         )}
-                        {qc.passed === null && (
-                          <span className="text-sm text-gray-400 italic">Pending</span>
+                        {qc.status !== 'PASSED' && qc.status !== 'FAILED' && (
+                          <span className="text-sm text-gray-400 italic">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -459,10 +459,56 @@ export const QualityControlsPage = () => {
       <QualityControlDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        qualityControl={selectedQC}
-        onEdit={() => {
+        data={selectedQC}
+        onStatusChange={async (id, status) => {
+          try {
+            const updatedQC = await qualityService.updateQualityControlStatus(id, status);
+            setSelectedQC(updatedQC);
+            await fetchQualityControls();
+            toast.success(`Status changed to ${status}`);
+          } catch (error) {
+            toast.error('Failed to update status');
+            console.error(error);
+          }
+        }}
+        onApprove={async (id) => {
+          try {
+            const updatedQC = await qualityService.approveQualityControl(id);
+            setSelectedQC(updatedQC);
+            await fetchQualityControls();
+            toast.success('Quality control approved');
+          } catch (error) {
+            toast.error('Failed to approve quality control');
+            console.error(error);
+          }
+        }}
+        onReject={async (id, reason) => {
+          try {
+            const updatedQC = await qualityService.rejectQualityControl(id, reason);
+            setSelectedQC(updatedQC);
+            await fetchQualityControls();
+            toast.success('Quality control rejected');
+          } catch (error) {
+            toast.error('Failed to reject quality control');
+            console.error(error);
+          }
+        }}
+        onEdit={(qc) => {
+          setSelectedQC(qc);
           setIsDetailModalOpen(false);
           setIsEditModalOpen(true);
+        }}
+        onDelete={async (id) => {
+          try {
+            await qualityService.deleteQualityControl(id);
+            toast.success('Quality control deleted');
+            await fetchQualityControls();
+            setIsDetailModalOpen(false);
+            setSelectedQC(null);
+          } catch (error) {
+            toast.error('Failed to delete quality control');
+            console.error(error);
+          }
         }}
       />
 
@@ -471,7 +517,7 @@ export const QualityControlsPage = () => {
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={confirmDelete}
         title="Delete Quality Control"
-        message={`Are you sure you want to delete quality control "${selectedQC?.controlNumber}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete quality control "${selectedQC?.inspectionNumber}"? This action cannot be undone.`}
       />
     </div>
   );
