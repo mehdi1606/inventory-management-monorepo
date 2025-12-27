@@ -155,13 +155,25 @@ public class QualityControlServiceImpl implements QualityControlService {
         QualityControl inspection = qualityControlRepository.findById(id)
                 .orElseThrow(() -> new InspectionNotFoundException(id));
 
-        if (inspection.getStatus() != QCStatus.PASSED && inspection.getStatus() != QCStatus.FAILED) {
-            throw new InvalidInspectionStateException(id, inspection.getStatus(), "approve");
+        // Only allow approval if status is PASSED
+        if (inspection.getStatus() != QCStatus.PASSED) {
+            log.warn("Cannot approve quality control {} with status {}", id, inspection.getStatus());
+            throw new InvalidInspectionStateException(id, inspection.getStatus(), "approve - only PASSED inspections can be approved");
+        }
+
+        // Check if already approved
+        if (inspection.getApprovedBy() != null) {
+            log.warn("Quality control {} is already approved by {}", id, inspection.getApprovedBy());
+            // Allow re-approval but log it
         }
 
         inspection.setApprovedBy("SYSTEM"); // TODO: Get from security context
         inspection.setApprovedAt(LocalDateTime.now());
-        inspection.setDisposition(Disposition.ACCEPT);
+
+        // Only set disposition to ACCEPT if not already set
+        if (inspection.getDisposition() == null) {
+            inspection.setDisposition(Disposition.ACCEPT);
+        }
 
         QualityControl approvedInspection = qualityControlRepository.save(inspection);
         log.info("Quality control approved successfully: {}", id);
